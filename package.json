@@ -1,0 +1,28 @@
+{
+  "name": "server-ip",
+  "version": "1.0.0",
+  "description": "Serverul aplicatiei SmartCare",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cuteanbogdan/SERVER-IP.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cuteanbogdan/SERVER-IP/issues"
+  },
+  "homepage": "https://github.com/cuteanbogdan/SERVER-IP#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "nodemon": "^2.0.22",
+    "uuid": "^9.0.0"
+  }
+}
