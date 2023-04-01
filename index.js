@@ -1,23 +1,27 @@
 const express = require('express')
 const app = express()
 const dotenv = require('dotenv')
+const bodyParser = require('body-parser');
+const cors = require('cors')
 dotenv.config()
-let db = require('./db');
+const db = require('./db');
 const port = process.env.PORT || 5000
+const indexRouter = require('./router.js')
 
+app.use(express.json());
 
+app.use(bodyParser.json());
 
+app.use(bodyParser.urlencoded({
+    extended: true
+}));
+
+app.use(cors());
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
+app.use('/api', indexRouter);
 
-//temp test on DB
-db.query(
-    'SELECT * FROM `users_table`',
-    function(err, results, fields) {
-      console.log(results); // results contains rows returned by server
-    }
-  );
 
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`)
