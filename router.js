@@ -74,8 +74,8 @@ router.post('/login', loginValidation, (req, res, next) => {
                         });
                     }
                     if (bResult) {
-                        console.log(result)
-                        const token = jwt.sign({ id: result[0].id, name: result[0].name }, process.env.JWT_SECRET, { expiresIn: '24h' });
+                        let payload = { id: result[0].id, email: result[0].email }
+                        const token = jwt.sign(payload, process.env.JWT_SECRET, { issuer: 'http://cuty.com', expiresIn: '24h' });
                         db.query(
                             `UPDATE users SET last_login = ${Date.now()} WHERE id = '${result[0].id}'`
                         );
@@ -86,7 +86,7 @@ router.post('/login', loginValidation, (req, res, next) => {
                         });
                     }
                     return res.status(401).send({
-                        msg: 'Username or password is incorrect!'
+                        msg: 'Email or password is incorrect!'
                     });
                 }
             );
@@ -111,4 +111,56 @@ router.post('/get-user', (req, res, next) => {
         return res.send({ error: false, data: results[0], message: 'Fetch Successfully.' });
     });
 });
+
+router.post('/getutilizator/:id', (req, res, next) => {
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ) {
+        return res.status(422).json({
+            message: "Please provide the token",
+        });
+    }
+    const theToken = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
+    db.query('SELECT * FROM users where id=?', req.params.id, function (error, results, fields) {
+        if (error) throw error;
+        return res.send({ error: false, data: results[0], message: 'Fetch Successfully.' });
+    });
+});
+
+router.post('/verifytoken', (req, res, next) => {
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ) {
+        return res.status(422).json({
+            message: "Please provide the token",
+        });
+    }
+    const token = req.headers.authorization.split(' ')[1];
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+
+        if (err) {
+            let stringErr = err.toString()
+            if (stringErr.includes("jwt expired"))
+                return res.status(422).json({
+                    message: "Token has expired, please login again!",
+                });
+        } else {
+            if (decoded.iss != 'http://cuty.com')
+                return res.status(422).json({
+                    message: "Please provide an original token",
+                });
+        }
+        console.log('Token is valid', decoded);
+        return res.status(200).json({
+            data: decoded,
+        });
+    })
+})
+
+
 module.exports = router;
