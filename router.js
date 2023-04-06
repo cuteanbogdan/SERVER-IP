@@ -155,10 +155,17 @@ router.post('/verifytoken', (req, res, next) => {
                     message: "Please provide an original token",
                 });
         }
-        console.log('Token is valid', decoded);
-        return res.status(200).json({
-            data: decoded,
-        });
+        if (decoded) {
+            return res.status(200).json({
+                msg: "Token is valid",
+                data: decoded,
+            });
+        } else {
+            return res.status(422).json({
+                message: "The token is not working",
+            });
+        }
+
     })
 })
 
