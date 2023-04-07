@@ -5,51 +5,63 @@ const { signupValidation, loginValidation } = require('./validation');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const roles = {
+    "admin": "Administrator",
+    "pacient": "Pacient",
+    "medic": "Medic",
+    "ingrijitor": "Ingrijitor",
+    "supraveghetor": "Supraveghetor"
+}
+
 router.post('/register', signupValidation, (req, res, next) => {
-    console.log(req.body)
-    db.query(
-        `SELECT * FROM users WHERE LOWER(email) = LOWER(${db.escape(
-            req.body.email
-        )});`,
-        (err, result) => {
-            if (result.length) {
-                return res.status(409).send({
-                    msg: 'This user is already in use!'
-                });
-            } else {
-                // username is available
-                bcrypt.hash(req.body.password, 10, (err, hash) => {
-                    if (err) {
-                        return res.status(500).send({
-                            msg: err
-                        });
-                    } else {
-                        // has hashed pw => add to database
-                        db.query(
-                            `INSERT INTO users (name, email, password) VALUES ('${req.body.name}', ${db.escape(
-                                req.body.email
-                            )}, ${db.escape(hash)})`,
-                            (err, result) => {
-                                if (err) {
-                                    return res.status(400).send({
-                                        msg: err
+    try {
+        db.query(
+            `SELECT * FROM users_database WHERE LOWER(email) = LOWER(${db.escape(
+                req.body.email
+            )});`,
+            (err, result) => {
+                if (result.length) {
+                    return res.status(409).send({
+                        msg: 'This user is already in use!'
+                    });
+                } else {
+                    // username is available
+                    bcrypt.hash(req.body.password, 10, (err, hash) => {
+                        if (err) {
+                            return res.status(500).send({
+                                msg: err
+                            });
+                        } else {
+                            // has hashed pw => add to database
+                            db.query(
+                                `INSERT INTO users_database (name, email, password, role) VALUES ('${req.body.name}', ${db.escape(
+                                    req.body.email
+                                )}, ${db.escape(hash)}, ${db.escape(roles[req.body.role])})`,
+                                (err, result) => {
+                                    if (err) {
+                                        return res.status(400).send({
+                                            msg: err
+                                        });
+                                    }
+                                    return res.status(201).send({
+                                        msg: 'The user has been registerd with us!'
                                     });
                                 }
-                                return res.status(201).send({
-                                    msg: 'The user has been registerd with us!'
-                                });
-                            }
-                        );
-                    }
-                });
+                            );
+                        }
+                    });
+                }
             }
-        }
-    );
+        );
+    } catch (err) {
+        console.log(err)
+    }
+
 });
 
 router.post('/login', loginValidation, (req, res, next) => {
     db.query(
-        `SELECT * FROM users WHERE email = ${db.escape(req.body.email)};`,
+        `SELECT * FROM users_database WHERE email = ${db.escape(req.body.email)};`,
         (err, result) => {
             // user does not exists
             if (err) {
@@ -74,11 +86,8 @@ router.post('/login', loginValidation, (req, res, next) => {
                         });
                     }
                     if (bResult) {
-                        let payload = { id: result[0].id, email: result[0].email }
+                        let payload = { id: result[0].id, email: result[0].email, role: result[0].role }
                         const token = jwt.sign(payload, process.env.JWT_SECRET, { issuer: 'http://cuty.com', expiresIn: '24h' });
-                        db.query(
-                            `UPDATE users SET last_login = ${Date.now()} WHERE id = '${result[0].id}'`
-                        );
                         return res.status(200).send({
                             msg: 'Logged in!',
                             token,
@@ -158,7 +167,7 @@ router.post('/verifytoken', (req, res, next) => {
         if (decoded) {
             return res.status(200).json({
                 msg: "Token is valid",
-                data: decoded,
+                token: decoded,
             });
         } else {
             return res.status(422).json({
