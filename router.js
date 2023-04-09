@@ -6,11 +6,23 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const roles = {
-    "admin": "Administrator",
-    "pacient": "Pacient",
-    "medic": "Medic",
-    "ingrijitor": "Ingrijitor",
-    "supraveghetor": "Supraveghetor"
+    "Administrator": "Administrator",
+    "Pacient": "Pacient",
+    "Medic": "Medic",
+    "Ingrijitor": "Ingrijitor",
+    "Supraveghetor": "Supraveghetor"
+}
+
+const checkTokenExistence = (req, res, next) => {
+    if (
+        !req.headers.authorization ||
+        !req.headers.authorization.startsWith('Bearer') ||
+        !req.headers.authorization.split(' ')[1]
+    ) {
+        return res.status(422).json({
+            message: "Please provide the token",
+        });
+    }
 }
 
 router.post('/register', signupValidation, (req, res, next) => {
@@ -104,15 +116,7 @@ router.post('/login', loginValidation, (req, res, next) => {
 });
 
 router.post('/get-user', (req, res, next) => {
-    if (
-        !req.headers.authorization ||
-        !req.headers.authorization.startsWith('Bearer') ||
-        !req.headers.authorization.split(' ')[1]
-    ) {
-        return res.status(422).json({
-            message: "Please provide the token",
-        });
-    }
+    checkTokenExistence(req, res, next)
     const theToken = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
     db.query('SELECT * FROM users where id=?', decoded.id, function (error, results, fields) {
@@ -121,16 +125,43 @@ router.post('/get-user', (req, res, next) => {
     });
 });
 
+router.post('/getallusers', (req, res, next) => {
+    checkTokenExistence(req, res, next)
+    db.query('SELECT * FROM users_database', function (error, results, fields) {
+        if (error) console.log(error);
+        return res.status(200).send({ error: false, data: results, message: 'Fetch Successfully.' });
+    });
+});
+
+router.put('/update-user-role/:id', (req, res) => {
+    checkTokenExistence(req, res);
+    const userId = req.params.id;
+    const { role } = req.body;
+    db.query('UPDATE users_database SET role = ? WHERE id = ?', [role, userId], (err, result) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({ error: true, message: 'Failed to update user role.' });
+        }
+        return res.status(200).json({ error: false, message: 'User role updated successfully.' });
+    });
+});
+
+
+router.post('/delete-user/:id', (req, res, next) => {
+    checkTokenExistence(req, res, next);
+    const userId = req.params.id;
+    db.query('DELETE FROM users_database WHERE id = ?', [userId], function (error, results, fields) {
+        if (error) {
+            console.log(error);
+            return res.status(500).json({ error: true, message: 'Failed to delete user.' });
+        }
+        return res.status(200).send({ error: false, message: 'User deleted successfully.' });
+    });
+});
+
+
 router.post('/getutilizator/:id', (req, res, next) => {
-    if (
-        !req.headers.authorization ||
-        !req.headers.authorization.startsWith('Bearer') ||
-        !req.headers.authorization.split(' ')[1]
-    ) {
-        return res.status(422).json({
-            message: "Please provide the token",
-        });
-    }
+    checkTokenExistence(req, res, next)
     const theToken = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
     db.query('SELECT * FROM users where id=?', req.params.id, function (error, results, fields) {
@@ -140,15 +171,7 @@ router.post('/getutilizator/:id', (req, res, next) => {
 });
 
 router.post('/verifytoken', (req, res, next) => {
-    if (
-        !req.headers.authorization ||
-        !req.headers.authorization.startsWith('Bearer') ||
-        !req.headers.authorization.split(' ')[1]
-    ) {
-        return res.status(422).json({
-            message: "Please provide the token",
-        });
-    }
+    checkTokenExistence(req, res, next)
     const token = req.headers.authorization.split(' ')[1];
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
 
