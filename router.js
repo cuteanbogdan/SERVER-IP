@@ -14,15 +14,41 @@ const roles = {
 }
 
 const checkTokenExistence = (req, res, next) => {
-    if (
-        !req.headers.authorization ||
-        !req.headers.authorization.startsWith('Bearer') ||
-        !req.headers.authorization.split(' ')[1]
-    ) {
-        return res.status(422).json({
-            message: "Please provide the token",
-        });
+    try {
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith('Bearer') ||
+            !req.headers.authorization.split(' ')[1]
+        ) {
+            return res.status(422).json({
+                message: "Please provide the token",
+            });
+        }
+        const token = req.headers.authorization.split(' ')[1];
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+
+            if (err) {
+                if (err instanceof jwt.TokenExpiredError)
+                    return res.status(422).json({
+                        message: "Token has expired, please login again!",
+                    });
+            } else {
+                if (decoded.iss != 'http://cuty.com')
+                    return res.status(422).json({
+                        message: "Please provide an original token",
+                    });
+            }
+            if (!decoded) {
+                return res.status(422).json({
+                    message: "The token is not working",
+                });
+            }
+
+        })
+    } catch (error) {
+        console.log(error)
     }
+
 }
 
 router.post('/register', signupValidation, (req, res, next) => {
@@ -133,6 +159,18 @@ router.post('/getallusers', (req, res, next) => {
     });
 });
 
+router.post('/getallpacients', (req, res, next) => {
+    checkTokenExistence(req, res, next);
+    db.query('SELECT * FROM users_database WHERE role = ?', ['Pacient'], function (error, results, fields) {
+        if (error) {
+            console.log(error);
+            return res.status(500).send({ error: true, message: 'Failed to retrieve data.' });
+        }
+        return res.status(200).send({ error: false, data: results, message: 'Fetch Successfully.' });
+    });
+});
+
+
 router.put('/update-user-role/:id', (req, res) => {
     checkTokenExistence(req, res);
     const userId = req.params.id;
@@ -159,6 +197,18 @@ router.post('/delete-user/:id', (req, res, next) => {
     });
 });
 
+router.post('/delete-pacient/:id', (req, res, next) => {
+    checkTokenExistence(req, res, next);
+    const userId = req.params.id;
+    db.query('DELETE FROM users_database WHERE id = ?', [userId], function (error, results, fields) {
+        if (error) {
+            console.log(error);
+            return res.status(500).json({ error: true, message: 'Failed to delete user.' });
+        }
+        return res.status(200).send({ error: false, message: 'Pacient deleted successfully.' });
+    });
+});
+
 
 router.post('/getutilizator/:id', (req, res, next) => {
     checkTokenExistence(req, res, next)
@@ -171,34 +221,46 @@ router.post('/getutilizator/:id', (req, res, next) => {
 });
 
 router.post('/verifytoken', (req, res, next) => {
-    checkTokenExistence(req, res, next)
-    const token = req.headers.authorization.split(' ')[1];
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-
-        if (err) {
-            let stringErr = err.toString()
-            if (stringErr.includes("jwt expired"))
-                return res.status(422).json({
-                    message: "Token has expired, please login again!",
-                });
-        } else {
-            if (decoded.iss != 'http://cuty.com')
-                return res.status(422).json({
-                    message: "Please provide an original token",
-                });
-        }
-        if (decoded) {
-            return res.status(200).json({
-                msg: "Token is valid",
-                token: decoded,
-            });
-        } else {
+    try {
+        if (
+            !req.headers.authorization ||
+            !req.headers.authorization.startsWith('Bearer') ||
+            !req.headers.authorization.split(' ')[1]
+        ) {
             return res.status(422).json({
-                message: "The token is not working",
+                message: "Please provide the token",
             });
         }
+        const token = req.headers.authorization.split(' ')[1];
+        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+            try {
+                if (err) {
+                    if (err instanceof jwt.TokenExpiredError)
+                        return res.status(422).json({
+                            message: "Token has expired, please login again!",
+                        });
+                } else {
+                    if (decoded.iss != 'http://cuty.com')
+                        return res.status(422).json({
+                            message: "Please provide an original token",
+                        });
+                }
+            } catch (error) {
+                console.log(error.name)
+            }
 
-    })
+            if (!decoded) {
+                return res.status(422).json({
+                    message: "The token is not working",
+                });
+            }
+            return res.send({ error: false, data: decoded, message: 'TOKEN Valid.' });
+
+        })
+    } catch (error) {
+        console.log("ERROR", error.name)
+    }
+
 })
 
 
