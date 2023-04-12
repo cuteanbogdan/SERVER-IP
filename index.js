@@ -6,7 +6,8 @@ const cors = require('cors')
 dotenv.config()
 const db = require('./db');
 const port = process.env.PORT || 5000
-const indexRouter = require('./router.js')
+const usersRouter = require('./usersRouter.js')
+const emailRouter = require('./emailRouter')
 
 app.use(express.json());
 
@@ -21,7 +22,8 @@ app.use(cors());
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })
-app.use('/api', indexRouter);
+app.use('/api', usersRouter);
+app.use('/email', emailRouter)
 
 
 app.listen(port, () => {

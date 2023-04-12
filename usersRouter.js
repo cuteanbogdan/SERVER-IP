@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./db.js');
-const { signupValidation, loginValidation } = require('./validation');
+const { signupValidation, loginValidation } = require('./validation.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
@@ -26,30 +26,31 @@ const checkTokenExistence = (req, res, next) => {
         }
         const token = req.headers.authorization.split(' ')[1];
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-
             if (err) {
-                if (err instanceof jwt.TokenExpiredError)
+                if (err instanceof jwt.TokenExpiredError) {
                     return res.status(422).json({
                         message: "Token has expired, please login again!",
                     });
-            } else {
-                if (decoded.iss != 'http://cuty.com')
-                    return res.status(422).json({
-                        message: "Please provide an original token",
-                    });
-            }
-            if (!decoded) {
+                }
                 return res.status(422).json({
                     message: "The token is not working",
                 });
             }
 
-        })
+            if (decoded && decoded.iss === 'http://cuty.com') {
+                next();
+            } else {
+                return res.status(422).json({
+                    message: "Please provide an original token",
+                });
+            }
+        });
     } catch (error) {
-        console.log(error)
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
     }
+};
 
-}
 
 router.post('/register', signupValidation, (req, res, next) => {
     try {
@@ -82,7 +83,7 @@ router.post('/register', signupValidation, (req, res, next) => {
                                         });
                                     }
                                     return res.status(201).send({
-                                        msg: 'The user has been registerd with us!'
+                                        msg: 'The user has been registered with us!'
                                     });
                                 }
                             );
@@ -141,8 +142,7 @@ router.post('/login', loginValidation, (req, res, next) => {
     );
 });
 
-router.post('/get-user', (req, res, next) => {
-    checkTokenExistence(req, res, next)
+router.post('/get-user', checkTokenExistence, (req, res, next) => {
     const theToken = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
     db.query('SELECT * FROM users where id=?', decoded.id, function (error, results, fields) {
@@ -151,16 +151,19 @@ router.post('/get-user', (req, res, next) => {
     });
 });
 
-router.post('/getallusers', (req, res, next) => {
-    checkTokenExistence(req, res, next)
-    db.query('SELECT * FROM users_database', function (error, results, fields) {
-        if (error) console.log(error);
-        return res.status(200).send({ error: false, data: results, message: 'Fetch Successfully.' });
-    });
+router.post('/getallusers', checkTokenExistence, (req, res, next) => {
+    try {
+        db.query('SELECT * FROM users_database', function (error, results, fields) {
+            if (error) console.log(error);
+            return res.status(200).send({ error: false, data: results, message: 'Fetch Successfully.' });
+        });
+    } catch (error) {
+        console.log(error)
+    }
+
 });
 
-router.post('/getallpacients', (req, res, next) => {
-    checkTokenExistence(req, res, next);
+router.post('/getallpacients', checkTokenExistence, (req, res, next) => {
     db.query('SELECT * FROM users_database WHERE role = ?', ['Pacient'], function (error, results, fields) {
         if (error) {
             console.log(error);
@@ -171,8 +174,7 @@ router.post('/getallpacients', (req, res, next) => {
 });
 
 
-router.put('/update-user-role/:id', (req, res) => {
-    checkTokenExistence(req, res);
+router.put('/update-user-role/:id', checkTokenExistence, (req, res) => {
     const userId = req.params.id;
     const { role } = req.body;
     db.query('UPDATE users_database SET role = ? WHERE id = ?', [role, userId], (err, result) => {
@@ -185,8 +187,7 @@ router.put('/update-user-role/:id', (req, res) => {
 });
 
 
-router.post('/delete-user/:id', (req, res, next) => {
-    checkTokenExistence(req, res, next);
+router.post('/delete-user/:id', checkTokenExistence, (req, res, next) => {
     const userId = req.params.id;
     db.query('DELETE FROM users_database WHERE id = ?', [userId], function (error, results, fields) {
         if (error) {
@@ -197,8 +198,7 @@ router.post('/delete-user/:id', (req, res, next) => {
     });
 });
 
-router.post('/delete-pacient/:id', (req, res, next) => {
-    checkTokenExistence(req, res, next);
+router.post('/delete-pacient/:id', checkTokenExistence, (req, res, next) => {
     const userId = req.params.id;
     db.query('DELETE FROM users_database WHERE id = ?', [userId], function (error, results, fields) {
         if (error) {
@@ -210,8 +210,7 @@ router.post('/delete-pacient/:id', (req, res, next) => {
 });
 
 
-router.post('/getutilizator/:id', (req, res, next) => {
-    checkTokenExistence(req, res, next)
+router.post('/getutilizator/:id', checkTokenExistence, (req, res, next) => {
     const theToken = req.headers.authorization.split(' ')[1];
     const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
     db.query('SELECT * FROM users where id=?', req.params.id, function (error, results, fields) {
@@ -220,7 +219,7 @@ router.post('/getutilizator/:id', (req, res, next) => {
     });
 });
 
-router.post('/verifytoken', (req, res, next) => {
+router.post('/verifytoken', (req, res) => {
     try {
         if (
             !req.headers.authorization ||
@@ -233,35 +232,31 @@ router.post('/verifytoken', (req, res, next) => {
         }
         const token = req.headers.authorization.split(' ')[1];
         jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            try {
-                if (err) {
-                    if (err instanceof jwt.TokenExpiredError)
-                        return res.status(422).json({
-                            message: "Token has expired, please login again!",
-                        });
+            if (err) {
+                if (err instanceof jwt.TokenExpiredError) {
+                    return res.status(422).json({
+                        message: "Token has expired, please login again!",
+                    });
                 } else {
-                    if (decoded.iss != 'http://cuty.com')
-                        return res.status(422).json({
-                            message: "Please provide an original token",
-                        });
+                    return res.status(422).json({
+                        message: "The token is not working",
+                    });
                 }
-            } catch (error) {
-                console.log(error.name)
             }
 
-            if (!decoded) {
+            if (decoded && decoded.iss === 'http://cuty.com') {
+                return res.send({ error: false, data: decoded, message: 'TOKEN Valid.' });
+            } else {
                 return res.status(422).json({
-                    message: "The token is not working",
+                    message: "Please provide an original token",
                 });
             }
-            return res.send({ error: false, data: decoded, message: 'TOKEN Valid.' });
-
-        })
+        });
     } catch (error) {
-        console.log("ERROR", error.name)
+        console.log("ERROR", error.name);
+        res.status(500).json({ message: 'Internal server error' });
     }
-
-})
+});
 
 
 module.exports = router;
