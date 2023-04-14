@@ -37,7 +37,7 @@ const checkTokenExistence = (req, res, next) => {
                 });
             }
 
-            if (decoded && decoded.iss === 'http://cuty.com') {
+            if (decoded && decoded.iss === 'http://smartcare.com') {
                 next();
             } else {
                 return res.status(422).json({
@@ -52,8 +52,21 @@ const checkTokenExistence = (req, res, next) => {
 };
 
 
-router.post('/register', signupValidation, (req, res, next) => {
+router.post('/register', signupValidation, checkTokenExistence, (req, res, next) => {
     try {
+        switch (req.body.role) {
+            case "Administrator": console.log("Administrator")
+                break;
+            case "Medic": console.log("Medic")
+                break;
+            case "Pacient": console.log("Pacient")
+                break;
+            case "Ingrijitor": console.log("Ingrijitor")
+                break;
+            case "Supraveghetor": console.log("Supraveghetor")
+                break;
+            default: console.log("No role")
+        }
         db.query(
             `SELECT * FROM users_database WHERE LOWER(email) = LOWER(${db.escape(
                 req.body.email
@@ -73,9 +86,9 @@ router.post('/register', signupValidation, (req, res, next) => {
                         } else {
                             // has hashed pw => add to database
                             db.query(
-                                `INSERT INTO users_database (name, email, password, role) VALUES ('${req.body.name}', ${db.escape(
+                                `INSERT INTO users_database (name, email, password, role, age) VALUES ('${req.body.name}', ${db.escape(
                                     req.body.email
-                                )}, ${db.escape(hash)}, ${db.escape(roles[req.body.role])})`,
+                                )}, ${db.escape(hash)}, ${db.escape(roles[req.body.role])}, ${db.escape(req.body.age)})`,
                                 (err, result) => {
                                     if (err) {
                                         return res.status(400).send({
@@ -126,7 +139,7 @@ router.post('/login', loginValidation, (req, res, next) => {
                     }
                     if (bResult) {
                         let payload = { id: result[0].id, email: result[0].email, role: result[0].role }
-                        const token = jwt.sign(payload, process.env.JWT_SECRET, { issuer: 'http://cuty.com', expiresIn: '24h' });
+                        const token = jwt.sign(payload, process.env.JWT_SECRET, { issuer: 'http://smartcare.com', expiresIn: '24h' });
                         return res.status(200).send({
                             msg: 'Logged in!',
                             token,
@@ -244,7 +257,7 @@ router.post('/verifytoken', (req, res) => {
                 }
             }
 
-            if (decoded && decoded.iss === 'http://cuty.com') {
+            if (decoded && decoded.iss === 'http://smartcare.com') {
                 return res.send({ error: false, data: decoded, message: 'TOKEN Valid.' });
             } else {
                 return res.status(422).json({

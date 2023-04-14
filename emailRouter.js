@@ -36,42 +36,59 @@ function sendEmail(email, token) {
     });
 }
 /* send reset password link in email */
-router.post('/change-password-email', function (req, res, next) {
-    const email = req.body.email;
+router.post('/change-password-email', async function (req, res) {
+    try {
+        const email = req.body.email;
 
-    db.query('SELECT * FROM users_database WHERE email ="' + email + '"', function (err, result) {
-        if (err) throw err;
-
-        if (result[0].email.length > 0) {
-            var changePasswordToken = uuid();
-            var sent = sendEmail(email, changePasswordToken);
-
-            if (sent != '0') {
-                var data = {
-                    changePasswordToken: changePasswordToken
-                };
-
-                db.query('UPDATE users_database SET ? WHERE email ="' + email + '"', data, function (err, result) {
-                    if (err) throw err;
-                });
-
-                res.status(200).json({
-                    status: 'success',
-                    message: 'The reset password link has been sent to your email address'
-                });
-            } else {
-                res.status(500).json({
+        db.query('SELECT * FROM users_database WHERE email = ?', [email], async function (err, result) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({
                     status: 'error',
-                    message: 'Something went wrong. Please try again'
+                    message: 'Internal server error'
                 });
             }
-        } else {
-            res.status(404).json({
-                status: 'error',
-                message: 'The Email is not registered with us'
-            });
-        }
-    });
+
+            if (result.length > 0) {
+                var changePasswordToken = uuid();
+                var sent = await sendEmail(email, changePasswordToken);
+
+                if (sent != '0') {
+                    var data = {
+                        changePasswordToken: changePasswordToken
+                    };
+
+                    db.query('UPDATE users_database SET ? WHERE email = ?', [data, email], function (err, result) {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).json({
+                                status: 'error',
+                                message: 'Internal server error'
+                            });
+                        }
+                    });
+
+                    res.status(200).json({
+                        status: 'success',
+                        message: 'The reset password link has been sent to your email address'
+                    });
+                } else {
+                    res.status(500).json({
+                        status: 'error',
+                        message: 'Something went wrong. Please try again'
+                    });
+                }
+            } else {
+                res.status(404).json({
+                    status: 'error',
+                    message: 'The Email is not registered with us'
+                });
+            }
+        });
+    } catch (error) {
+        console.error("ERROR", error.name);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
 /* update password to database */
