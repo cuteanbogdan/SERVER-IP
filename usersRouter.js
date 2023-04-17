@@ -59,59 +59,96 @@ router.post('/register', signupValidation, checkTokenExistence, (req, res, next)
         const errorMessages = errors.array().map(error => error.msg);
         return res.status(400).json({ errors: errorMessages });
     }
-
     try {
         switch (req.body.role) {
             case "Administrator": console.log("Administrator")
                 break;
             case "Medic": console.log("Medic")
                 break;
-            case "Pacient": console.log("Pacient")
+            case "Pacient": db.query(
+                `SELECT * FROM pacienti WHERE LOWER(email) = LOWER(${db.escape(
+                    req.body.email
+                )});`,
+                (err, result) => {
+                    if (result.length) {
+                        return res.status(409).send({
+                            msg: 'This pacient is already in use!'
+                        });
+                    } else {
+                        // username is available
+                        bcrypt.hash(req.body.password, 10, (err, hash) => {
+                            if (err) {
+                                return res.status(500).send({
+                                    msg: err
+                                });
+                            } else {
+                                // has hashed pw => add to database
+                                db.query(
+                                    `INSERT INTO pacienti (role, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, password, varsta) VALUES (${db.escape(roles[req.body.role])}, ${db.escape(
+                                        req.body.cnp)}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)}, ${db.escape(req.body.adresa)}, ${db.escape(req.body.nr_tel)}, ${db.escape(req.body.nr_tel_pers_contact)}, 
+                                        ${db.escape(req.body.email)}, ${db.escape(req.body.profesie)}, ${db.escape(req.body.loc_munca)}, ${db.escape(hash)}, ${db.escape(req.body.varsta)})`,
+                                    (err, result) => {
+                                        if (err) {
+                                            return res.status(400).send({
+                                                msg: err
+                                            });
+                                        }
+                                        return res.status(201).send({
+                                            msg: 'The user has been registered with us!'
+                                        });
+                                    }
+                                );
+                            }
+                        });
+                    }
+                }
+            );
                 break;
             case "Ingrijitor": console.log("Ingrijitor")
                 break;
             case "Supraveghetor": console.log("Supraveghetor")
                 break;
-            default: console.log("No role")
-        }
-        db.query(
-            `SELECT * FROM users_database WHERE LOWER(email) = LOWER(${db.escape(
-                req.body.email
-            )});`,
-            (err, result) => {
-                if (result.length) {
-                    return res.status(409).send({
-                        msg: 'This user is already in use!'
-                    });
-                } else {
-                    // username is available
-                    bcrypt.hash(req.body.password, 10, (err, hash) => {
-                        if (err) {
-                            return res.status(500).send({
-                                msg: err
-                            });
-                        } else {
-                            // has hashed pw => add to database
-                            db.query(
-                                `INSERT INTO users_database (name, email, password, role, age) VALUES ('${req.body.name}', ${db.escape(
-                                    req.body.email
-                                )}, ${db.escape(hash)}, ${db.escape(roles[req.body.role])}, ${db.escape(req.body.age)})`,
-                                (err, result) => {
-                                    if (err) {
-                                        return res.status(400).send({
-                                            msg: err
+            default: db.query(
+                `SELECT * FROM users_database WHERE LOWER(email) = LOWER(${db.escape(
+                    req.body.email
+                )});`,
+                (err, result) => {
+                    if (result.length) {
+                        return res.status(409).send({
+                            msg: 'This user is already in use!'
+                        });
+                    } else {
+                        // username is available
+                        bcrypt.hash(req.body.password, 10, (err, hash) => {
+                            if (err) {
+                                return res.status(500).send({
+                                    msg: err
+                                });
+                            } else {
+                                // has hashed pw => add to database
+                                db.query(
+                                    `INSERT INTO users_database (name, email, password, role, age) VALUES ('${req.body.name}', ${db.escape(
+                                        req.body.email
+                                    )}, ${db.escape(hash)}, ${db.escape(roles[req.body.role])}, ${db.escape(req.body.age)})`,
+                                    (err, result) => {
+                                        if (err) {
+                                            return res.status(400).send({
+                                                msg: err
+                                            });
+                                        }
+                                        return res.status(201).send({
+                                            msg: 'The user has been registered with us!'
                                         });
                                     }
-                                    return res.status(201).send({
-                                        msg: 'The user has been registered with us!'
-                                    });
-                                }
-                            );
-                        }
-                    });
+                                );
+                            }
+                        });
+                    }
                 }
-            }
-        );
+            );
+                break;
+        }
+
     } catch (err) {
         console.log(err)
     }
@@ -200,7 +237,7 @@ router.post('/getallusers', checkTokenExistence, (req, res, next) => {
 
 router.post('/getallpacients', checkTokenExistence, (req, res, next) => {
     try {
-        db.query('SELECT * FROM users_database WHERE role = ?', ['Pacient'], function (error, results, fields) {
+        db.query('SELECT * FROM pacienti WHERE role = ?', ['Pacient'], function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res.status(500).send({ error: true, msg: 'Failed to retrieve data.' });
@@ -249,7 +286,7 @@ router.post('/delete-user/:id', checkTokenExistence, (req, res, next) => {
 router.post('/delete-pacient/:id', checkTokenExistence, (req, res, next) => {
     try {
         const userId = req.params.id;
-        db.query('DELETE FROM users_database WHERE id = ?', [userId], function (error, results, fields) {
+        db.query('DELETE FROM pacienti WHERE id_pacient = ?', [userId], function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ error: true, msg: 'Failed to delete user.' });
