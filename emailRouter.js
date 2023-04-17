@@ -45,7 +45,7 @@ router.post('/change-password-email', async function (req, res) {
                 console.error(err);
                 return res.status(500).json({
                     status: 'error',
-                    message: 'Internal server error'
+                    msg: 'Internal server error'
                 });
             }
 
@@ -63,67 +63,85 @@ router.post('/change-password-email', async function (req, res) {
                             console.error(err);
                             return res.status(500).json({
                                 status: 'error',
-                                message: 'Internal server error'
+                                msg: 'Internal server error'
                             });
                         }
                     });
 
                     res.status(200).json({
                         status: 'success',
-                        message: 'The reset password link has been sent to your email address'
+                        msg: 'The reset password link has been sent to your email address: '
                     });
                 } else {
                     res.status(500).json({
                         status: 'error',
-                        message: 'Something went wrong. Please try again'
+                        msg: 'Something went wrong. Please try again'
                     });
                 }
             } else {
                 res.status(404).json({
                     status: 'error',
-                    message: 'The Email is not registered with us'
+                    msg: 'The Email is not registered with us'
                 });
             }
         });
     } catch (error) {
         console.error("ERROR", error.name);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ msg: 'Internal server error' });
     }
 });
 
 /* update password to database */
 router.post('/update-password', function (req, res, next) {
-    const token = req.body.token;
-    const password = req.body.password;
+    try {
+        const token = req.body.token;
+        const password = req.body.password;
 
-    db.query('SELECT * FROM users_database WHERE changePasswordToken ="' + token + '"', function (err, result) {
-        if (err) throw err;
+        db.query('SELECT * FROM users_database WHERE changePasswordToken ="' + token + '"', function (err, result) {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({
+                    status: 'error',
+                    msg: 'Internal server error'
+                });
+            }
 
-        if (result.length > 0) {
-            var saltRounds = 10;
-            bcrypt.genSalt(saltRounds, function (err, salt) {
-                bcrypt.hash(password, salt, function (err, hash) {
-                    var data = {
-                        password: hash
-                    };
+            if (result.length > 0) {
+                var saltRounds = 10;
+                bcrypt.genSalt(saltRounds, function (err, salt) {
+                    bcrypt.hash(password, salt, function (err, hash) {
+                        var data = {
+                            password: hash
+                        };
 
-                    db.query('UPDATE users_database SET ? WHERE email ="' + result[0].email + '"', data, function (err, result) {
-                        if (err) throw err;
-                    });
+                        db.query('UPDATE users_database SET ? WHERE email ="' + result[0].email + '"', data, function (err, result) {
+                            if (err) {
+                                console.error(err);
+                                return res.status(500).json({
+                                    status: 'error',
+                                    msg: 'Internal server error'
+                                });
+                            }
+                        });
 
-                    res.status(200).json({
-                        status: 'success',
-                        message: 'Your password has been updated successfully'
+                        res.status(200).json({
+                            status: 'success',
+                            msg: 'Your password has been updated successfully'
+                        });
                     });
                 });
-            });
-        } else {
-            res.status(400).json({
-                status: 'error',
-                message: 'Invalid link; please try again'
-            });
-        }
-    });
+            } else {
+                res.status(400).json({
+                    status: 'error',
+                    msg: 'Invalid link; please try again'
+                });
+            }
+        });
+    } catch (error) {
+        console.error("ERROR", error.name);
+        res.status(500).json({ msg: 'Internal server error' });
+    }
+
 });
 
 module.exports = router;
