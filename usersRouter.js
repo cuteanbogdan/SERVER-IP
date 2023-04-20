@@ -9,7 +9,7 @@ const { validationResult } = require('express-validator');
 const roles = {
     "Administrator": "Administrator",
     "Pacient": "Pacient",
-    "Medic": "Medic",
+    "Doctor": "Doctor",
     "Ingrijitor": "Ingrijitor",
     "Supraveghetor": "Supraveghetor"
 }
@@ -63,7 +63,7 @@ router.post('/register', signupValidation, checkTokenExistence, (req, res, next)
         switch (req.body.role) {
             case "Administrator": console.log("Administrator")
                 break;
-            case "Medic": console.log("Medic")
+            case "Doctor": console.log("Doctor")
                 break;
             case "Pacient": db.query(
                 `SELECT * FROM Pacienti WHERE LOWER(email) = LOWER(${db.escape(
@@ -156,9 +156,19 @@ router.post('/register', signupValidation, checkTokenExistence, (req, res, next)
 });
 
 router.post('/login', loginValidation, (req, res, next) => {
+    let payload;
     try {
-        db.query(
-            `SELECT * FROM users_database WHERE email = ${db.escape(req.body.email)};`,
+        db.query(`
+    SELECT id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Doctori WHERE email = ${db.escape(req.body.email)}
+    UNION ALL
+    SELECT NULL as id_doctor, id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Pacienti WHERE email = ${db.escape(req.body.email)}
+    UNION ALL
+    SELECT NULL as id_doctor, NULL as id_pacient, id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Ingrijitori WHERE email = ${db.escape(req.body.email)}
+    UNION ALL
+    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Supraveghetori WHERE email = ${db.escape(req.body.email)}
+    UNION ALL
+    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, id_administrator, email, parola, rol, nume FROM Administratori WHERE email = ${db.escape(req.body.email)}
+`,
             (err, result) => {
                 // user does not exists
                 if (err) {
@@ -174,16 +184,44 @@ router.post('/login', loginValidation, (req, res, next) => {
                 // check password
                 bcrypt.compare(
                     req.body.password,
-                    result[0]['password'],
+                    result[0]['parola'],
                     (bErr, bResult) => {
                         // wrong password
                         if (bErr) {
+                            console.log(bErr)
                             return res.status(401).send({
                                 msg: 'Email or password is incorrect!'
                             });
                         }
                         if (bResult) {
-                            let payload = { id: result[0].id, email: result[0].email, role: result[0].role }
+                            const modifiedRole = result[0].rol.charAt(0).toLowerCase() + result[0].rol.slice(1);
+                            const idKey = `id_${modifiedRole}`;
+                            console.log("RESULT[0]: ",result[0])
+                            //iau ID-ul 
+                            const getIdValue = (result) => {
+                                if (result.id_doctor !== null) return result.id_doctor;
+                                if (result.id_pacient !== null) return result.id_pacient;
+                                if (result.id_ingrijitor !== null) return result.id_ingrijitor;
+                                if (result.id_supraveghetor !== null) return result.id_supraveghetor;
+                                if (result.id_administrator !== null) return result.id_administrator;
+                              };
+                              const idValue = getIdValue(result[0]);
+                                //payload starndard pentru toti utilizatorii
+                            let initialPayload = { [idKey]: `${idValue}_${modifiedRole}`, email: result[0].email, rol: result[0].rol }
+                            switch(result[0].rol){
+                                //payload personificat pt fiecare
+                                case "Administrator":  payload = {...initialPayload, nume:result[0].nume}
+                                console.log(payload)
+                                    break;
+                                case "Doctor": console.log("Doctor")
+                                    break;
+                                case "Pacient": console.log("Pacient")
+                                    break;
+                                case "Ingrijitor": console.log("Ingrijitor")
+                                    break;
+                                case "Supraveghetor": console.log("Supraveghetor")
+                                    break;
+                            }           
                             const token = jwt.sign(payload, process.env.JWT_SECRET, { issuer: 'http://smartcare.com', expiresIn: '24h' });
                             return res.status(200).send({
                                 msg: 'Logged in!',
@@ -223,7 +261,17 @@ router.post('/get-user', checkTokenExistence, (req, res, next) => {
 
 router.post('/getallusers', checkTokenExistence, (req, res, next) => {
     try {
-        db.query('SELECT * FROM users_database', function (error, results, fields) {
+        db.query(`
+    SELECT id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Doctori
+    UNION ALL
+    SELECT NULL as id_doctor, id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Pacienti 
+    UNION ALL
+    SELECT NULL as id_doctor, NULL as id_pacient, id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Ingrijitori 
+    UNION ALL
+    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Supraveghetori 
+    UNION ALL
+    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, id_administrator, email, parola, rol, nume FROM Administratori 
+`, function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ error: true, msg: 'Failed to fetch users.' });
