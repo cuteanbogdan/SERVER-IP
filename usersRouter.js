@@ -66,7 +66,7 @@ router.post('/register', signupValidation, checkTokenExistence, (req, res, next)
             case "Medic": console.log("Medic")
                 break;
             case "Pacient": db.query(
-                `SELECT * FROM pacienti WHERE LOWER(email) = LOWER(${db.escape(
+                `SELECT * FROM Pacienti WHERE LOWER(email) = LOWER(${db.escape(
                     req.body.email
                 )});`,
                 (err, result) => {
@@ -84,7 +84,7 @@ router.post('/register', signupValidation, checkTokenExistence, (req, res, next)
                             } else {
                                 // has hashed pw => add to database
                                 db.query(
-                                    `INSERT INTO pacienti (role, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, password, varsta) VALUES (${db.escape(roles[req.body.role])}, ${db.escape(
+                                    `INSERT INTO Pacienti (role, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, password, varsta) VALUES (${db.escape(roles[req.body.role])}, ${db.escape(
                                         req.body.cnp)}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)}, ${db.escape(req.body.adresa)}, ${db.escape(req.body.nr_tel)}, ${db.escape(req.body.nr_tel_pers_contact)}, 
                                         ${db.escape(req.body.email)}, ${db.escape(req.body.profesie)}, ${db.escape(req.body.loc_munca)}, ${db.escape(hash)}, ${db.escape(req.body.varsta)})`,
                                     (err, result) => {
@@ -237,7 +237,7 @@ router.post('/getallusers', checkTokenExistence, (req, res, next) => {
 
 router.post('/getallpacients', checkTokenExistence, (req, res, next) => {
     try {
-        db.query('SELECT * FROM pacienti WHERE role = ?', ['Pacient'], function (error, results, fields) {
+        db.query('SELECT * FROM Pacienti WHERE role = ?', ['Pacient'], function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res.status(500).send({ error: true, msg: 'Failed to retrieve data.' });
@@ -286,7 +286,7 @@ router.post('/delete-user/:id', checkTokenExistence, (req, res, next) => {
 router.post('/delete-pacient/:id', checkTokenExistence, (req, res, next) => {
     try {
         const userId = req.params.id;
-        db.query('DELETE FROM pacienti WHERE id_pacient = ?', [userId], function (error, results, fields) {
+        db.query('DELETE FROM Pacienti WHERE id_pacient = ?', [userId], function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ error: true, msg: 'Failed to delete user.' });
