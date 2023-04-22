@@ -60,95 +60,220 @@ router.post('/register', signupValidation, checkTokenExistence, (req, res, next)
         return res.status(400).json({ errors: errorMessages });
     }
     try {
-        switch (req.body.role) {
-            case "Administrator": console.log("Administrator")
-                break;
-            case "Doctor": console.log("Doctor")
-                break;
-            case "Pacient": db.query(
-                `SELECT * FROM Pacienti WHERE LOWER(email) = LOWER(${db.escape(
-                    req.body.email
-                )});`,
-                (err, result) => {
-                    if (result.length) {
-                        return res.status(409).send({
-                            msg: 'This pacient is already in use!'
-                        });
-                    } else {
-                        // username is available
-                        bcrypt.hash(req.body.password, 10, (err, hash) => {
-                            if (err) {
-                                return res.status(500).send({
-                                    msg: err
+        db.query(`(
+            SELECT email FROM Administratori WHERE LOWER(email) = LOWER(${db.escape(req.body.email)})
+        ) UNION (
+            SELECT email FROM Pacienti WHERE LOWER(email) = LOWER(${db.escape(req.body.email)})
+        ) UNION (
+            SELECT email FROM Doctori WHERE LOWER(email) = LOWER(${db.escape(req.body.email)})
+        ) UNION (
+            SELECT email FROM Ingrijitori WHERE LOWER(email) = LOWER(${db.escape(req.body.email)})
+        ) UNION (
+            SELECT email FROM Supraveghetori WHERE LOWER(email) = LOWER(${db.escape(req.body.email)})
+        );`, (err, result) => {
+            if (result.length) {
+                return res.status(409).send({
+                    msg: 'This user email is already in use!'
+                });
+            }
+            else {
+                switch (req.body.rol) {
+                    case "Administrator": db.query(
+                        `SELECT * FROM Administratori WHERE LOWER(email) = LOWER(${db.escape(
+                            req.body.email
+                        )});`,
+                        (err, result) => {
+                            if (result.length) {
+                                return res.status(409).send({
+                                    msg: 'This administrator is already in use!'
                                 });
                             } else {
-                                // has hashed pw => add to database
-                                db.query(
-                                    `INSERT INTO Pacienti (role, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, password, varsta) VALUES (${db.escape(roles[req.body.role])}, ${db.escape(
-                                        req.body.cnp)}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)}, ${db.escape(req.body.adresa)}, ${db.escape(req.body.nr_tel)}, ${db.escape(req.body.nr_tel_pers_contact)}, 
-                                        ${db.escape(req.body.email)}, ${db.escape(req.body.profesie)}, ${db.escape(req.body.loc_munca)}, ${db.escape(hash)}, ${db.escape(req.body.varsta)})`,
-                                    (err, result) => {
-                                        if (err) {
-                                            return res.status(400).send({
-                                                msg: err
-                                            });
-                                        }
-                                        return res.status(201).send({
-                                            msg: 'The user has been registered with us!'
+                                // username is available
+                                bcrypt.hash(req.body.password, 10, (err, hash) => {
+                                    if (err) {
+                                        return res.status(500).send({
+                                            msg: err
                                         });
+                                    } else {
+                                        // has hashed pw => add to database
+                                        db.query(
+                                            `INSERT INTO Administratori (rol, nume, prenume, email, parola) VALUES (${db.escape(roles[req.body.rol])}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)},
+                                                ${db.escape(req.body.email)}, ${db.escape(hash)})`,
+                                            (err, result) => {
+                                                if (err) {
+                                                    return res.status(400).send({
+                                                        msg: err
+                                                    });
+                                                }
+                                                return res.status(201).send({
+                                                    msg: 'The user has been registered with us!'
+                                                });
+                                            }
+                                        );
                                     }
-                                );
+                                });
                             }
-                        });
-                    }
-                }
-            );
-                break;
-            case "Ingrijitor": console.log("Ingrijitor")
-                break;
-            case "Supraveghetor": console.log("Supraveghetor")
-                break;
-            default: db.query(
-                `SELECT * FROM users_database WHERE LOWER(email) = LOWER(${db.escape(
-                    req.body.email
-                )});`,
-                (err, result) => {
-                    if (result.length) {
-                        return res.status(409).send({
-                            msg: 'This user is already in use!'
-                        });
-                    } else {
-                        // username is available
-                        bcrypt.hash(req.body.password, 10, (err, hash) => {
-                            if (err) {
-                                return res.status(500).send({
-                                    msg: err
+                        }
+                    );
+                        break;
+                    case "Doctor": db.query(
+                        `SELECT * FROM Doctori WHERE LOWER(email) = LOWER(${db.escape(
+                            req.body.email
+                        )});`,
+                        (err, result) => {
+                            if (result.length) {
+                                return res.status(409).send({
+                                    msg: 'This doctor is already in use!'
                                 });
                             } else {
-                                // has hashed pw => add to database
-                                db.query(
-                                    `INSERT INTO users_database (name, email, password, role, age) VALUES ('${req.body.name}', ${db.escape(
-                                        req.body.email
-                                    )}, ${db.escape(hash)}, ${db.escape(roles[req.body.role])}, ${db.escape(req.body.age)})`,
-                                    (err, result) => {
-                                        if (err) {
-                                            return res.status(400).send({
-                                                msg: err
-                                            });
-                                        }
-                                        return res.status(201).send({
-                                            msg: 'The user has been registered with us!'
+                                // username is available
+                                bcrypt.hash(req.body.password, 10, (err, hash) => {
+                                    if (err) {
+                                        return res.status(500).send({
+                                            msg: err
                                         });
+                                    } else {
+                                        // has hashed pw => add to database
+                                        db.query(
+                                            `INSERT INTO Doctori (rol, nume, prenume, email ,parola) VALUES (${db.escape(roles[req.body.rol])}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)},
+                                                ${db.escape(req.body.email)}, ${db.escape(hash)})`,
+                                            (err, result) => {
+                                                if (err) {
+                                                    return res.status(400).send({
+                                                        msg: err
+                                                    });
+                                                }
+                                                return res.status(201).send({
+                                                    msg: 'The doctor has been registered with us!'
+                                                });
+                                            }
+                                        );
                                     }
-                                );
+                                });
                             }
-                        });
-                    }
+                        }
+                    );
+                        break;
+                    case "Pacient": db.query(
+                        `SELECT * FROM Pacienti WHERE LOWER(email) = LOWER(${db.escape(
+                            req.body.email
+                        )});`,
+                        (err, result) => {
+                            if (result.length) {
+                                return res.status(409).send({
+                                    msg: 'This patient is already in use!'
+                                });
+                            } else {
+                                // username is available
+                                bcrypt.hash(req.body.password, 10, (err, hash) => {
+                                    if (err) {
+                                        return res.status(500).send({
+                                            msg: err
+                                        });
+                                    } else {
+                                        // has hashed pw => add to database
+                                        db.query(
+                                            `INSERT INTO Pacienti (rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, parola, varsta) VALUES (${db.escape(roles[req.body.rol])}, ${db.escape(
+                                                req.body.cnp)}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)}, ${db.escape(req.body.adresa)}, ${db.escape(req.body.nr_tel)}, ${db.escape(req.body.nr_tel_pers_contact)}, 
+                                                ${db.escape(req.body.email)}, ${db.escape(req.body.profesie)}, ${db.escape(req.body.loc_munca)}, ${db.escape(hash)}, ${db.escape(req.body.varsta)})`,
+                                            (err, result) => {
+                                                if (err) {
+                                                    return res.status(400).send({
+                                                        msg: err
+                                                    });
+                                                }
+                                                return res.status(201).send({
+                                                    msg: 'The patient has been registered with us!'
+                                                });
+                                            }
+                                        );
+                                    }
+                                });
+                            }
+                        }
+                    );
+                        break;
+                    case "Ingrijitor": db.query(
+                        `SELECT * FROM Ingrijitori WHERE LOWER(email) = LOWER(${db.escape(
+                            req.body.email
+                        )});`,
+                        (err, result) => {
+                            if (result.length) {
+                                return res.status(409).send({
+                                    msg: 'This ingrijitor is already in use!'
+                                });
+                            } else {
+                                // username is available
+                                bcrypt.hash(req.body.password, 10, (err, hash) => {
+                                    if (err) {
+                                        return res.status(500).send({
+                                            msg: err
+                                        });
+                                    } else {
+                                        // has hashed pw => add to database
+                                        db.query(
+                                            `INSERT INTO Ingrijitori (rol, nume, prenume, email ,parola) VALUES (${db.escape(roles[req.body.rol])}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)},
+                                                ${db.escape(req.body.email)}, ${db.escape(hash)})`,
+                                            (err, result) => {
+                                                if (err) {
+                                                    return res.status(400).send({
+                                                        msg: err
+                                                    });
+                                                }
+                                                return res.status(201).send({
+                                                    msg: 'The ingrijitor has been registered with us!'
+                                                });
+                                            }
+                                        );
+                                    }
+                                });
+                            }
+                        }
+                    );
+                        break;
+                    case "Supraveghetor": db.query(
+                        `SELECT * FROM Supraveghetori WHERE LOWER(email) = LOWER(${db.escape(
+                            req.body.email
+                        )});`,
+                        (err, result) => {
+                            if (result.length) {
+                                return res.status(409).send({
+                                    msg: 'This supraveghetor is already in use!'
+                                });
+                            } else {
+                                // username is available
+                                bcrypt.hash(req.body.password, 10, (err, hash) => {
+                                    if (err) {
+                                        return res.status(500).send({
+                                            msg: err
+                                        });
+                                    } else {
+                                        // has hashed pw => add to database
+                                        db.query(
+                                            `INSERT INTO Supraveghetori (rol, nume, prenume, email ,parola) VALUES (${db.escape(roles[req.body.rol])}, ${db.escape(req.body.nume)}, ${db.escape(req.body.prenume)},
+                                                ${db.escape(req.body.email)}, ${db.escape(hash)})`,
+                                            (err, result) => {
+                                                if (err) {
+                                                    return res.status(400).send({
+                                                        msg: err
+                                                    });
+                                                }
+                                                return res.status(201).send({
+                                                    msg: 'The supraveghetor has been registered with us!'
+                                                });
+                                            }
+                                        );
+                                    }
+                                });
+                            }
+                        }
+                    );
+                        break;
+                    default: console.log("No role: ", req.body.rol)
+                        break;
                 }
-            );
-                break;
-        }
-
+            }
+        })
     } catch (err) {
         console.log(err)
     }
@@ -196,7 +321,7 @@ router.post('/login', loginValidation, (req, res, next) => {
                         if (bResult) {
                             const modifiedRole = result[0].rol.charAt(0).toLowerCase() + result[0].rol.slice(1);
                             const idKey = `id_${modifiedRole}`;
-                            console.log("RESULT[0]: ",result[0])
+                            console.log("RESULT[0]: ", result[0])
                             //iau ID-ul 
                             const getIdValue = (result) => {
                                 if (result.id_doctor !== null) return result.id_doctor;
@@ -204,24 +329,23 @@ router.post('/login', loginValidation, (req, res, next) => {
                                 if (result.id_ingrijitor !== null) return result.id_ingrijitor;
                                 if (result.id_supraveghetor !== null) return result.id_supraveghetor;
                                 if (result.id_administrator !== null) return result.id_administrator;
-                              };
-                              const idValue = getIdValue(result[0]);
-                                //payload starndard pentru toti utilizatorii
-                            let initialPayload = { [idKey]: `${idValue}_${modifiedRole}`, email: result[0].email, rol: result[0].rol }
-                            switch(result[0].rol){
+                            };
+                            const idValue = getIdValue(result[0]);
+                            //payload starndard pentru toti utilizatorii
+                            let initialPayload = { [idKey]: `${idValue}`, email: result[0].email, rol: result[0].rol }
+                            switch (result[0].rol) {
                                 //payload personificat pt fiecare
-                                case "Administrator":  payload = {...initialPayload, nume:result[0].nume}
-                                console.log(payload)
+                                case "Administrator": payload = { ...initialPayload, nume: result[0].nume }
                                     break;
-                                case "Doctor": console.log("Doctor")
+                                case "Doctor": payload = { ...initialPayload, nume: result[0].nume }
                                     break;
-                                case "Pacient": console.log("Pacient")
+                                case "Pacient": payload = { ...initialPayload, nume: result[0].nume }
                                     break;
-                                case "Ingrijitor": console.log("Ingrijitor")
+                                case "Ingrijitor": payload = { ...initialPayload, nume: result[0].nume }
                                     break;
-                                case "Supraveghetor": console.log("Supraveghetor")
+                                case "Supraveghetor": payload = { ...initialPayload, nume: result[0].nume }
                                     break;
-                            }           
+                            }
                             const token = jwt.sign(payload, process.env.JWT_SECRET, { issuer: 'http://smartcare.com', expiresIn: '24h' });
                             return res.status(200).send({
                                 msg: 'Logged in!',
@@ -285,7 +409,7 @@ router.post('/getallusers', checkTokenExistence, (req, res, next) => {
 
 router.post('/getallpacients', checkTokenExistence, (req, res, next) => {
     try {
-        db.query('SELECT * FROM Pacienti WHERE role = ?', ['Pacient'], function (error, results, fields) {
+        db.query('SELECT * FROM Pacienti WHERE rol = ?', ['Pacient'], function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res.status(500).send({ error: true, msg: 'Failed to retrieve data.' });
@@ -298,38 +422,47 @@ router.post('/getallpacients', checkTokenExistence, (req, res, next) => {
 });
 
 
-router.put('/update-user-role/:id', checkTokenExistence, (req, res) => {
+// router.put('/update-user-role/:id', checkTokenExistence, (req, res) => {
+//     try {
+//         const userId = req.params.id;
+//         const { role } = req.body;
+//         db.query('UPDATE users_database SET role = ? WHERE id = ?', [role, userId], (err, result) => {
+//             if (err) {
+//                 console.log(err);
+//                 return res.status(500).json({ error: true, msg: 'Failed to update user role.' });
+//             }
+//             return res.status(200).json({ error: false, msg: 'User role updated successfully.' });
+//         });
+//     } catch (error) {
+//         console.log(error)
+//     }
+// });
+
+
+router.post('/delete-user/:email', checkTokenExistence, (req, res, next) => {
     try {
-        const userId = req.params.id;
-        const { role } = req.body;
-        db.query('UPDATE users_database SET role = ? WHERE id = ?', [role, userId], (err, result) => {
-            if (err) {
-                console.log(err);
-                return res.status(500).json({ error: true, msg: 'Failed to update user role.' });
+        const userEmail = req.params.email;
+        const tables = ['Administratori', 'Pacienti', 'Doctori', 'Ingrijitori', 'Supraveghetori'];
+
+        const deleteFromTable = (index) => {
+            if (index >= tables.length) {
+                return res.status(200).send({ error: false, msg: 'User deleted successfully.' });
             }
-            return res.status(200).json({ error: false, msg: 'User role updated successfully.' });
-        });
+            db.query(`DELETE FROM ${tables[index]} WHERE LOWER(email) = LOWER(?)`, [userEmail], (error, results, fields) => {
+                if (error) {
+                    console.log(error);
+                    return res.status(500).json({ error: true, msg: 'Failed to delete user.' });
+                }
+
+                deleteFromTable(index + 1);
+            });
+        };
+        deleteFromTable(0);
     } catch (error) {
-        console.log(error)
+        console.log(error);
     }
 });
 
-
-router.post('/delete-user/:id', checkTokenExistence, (req, res, next) => {
-    try {
-        const userId = req.params.id;
-        db.query('DELETE FROM users_database WHERE id = ?', [userId], function (error, results, fields) {
-            if (error) {
-                console.log(error);
-                return res.status(500).json({ error: true, msg: 'Failed to delete user.' });
-            }
-            return res.status(200).send({ error: false, msg: 'User deleted successfully.' });
-        });
-    } catch (error) {
-        console.log(error)
-    }
-
-});
 
 router.post('/delete-pacient/:id', checkTokenExistence, (req, res, next) => {
     try {
@@ -347,6 +480,23 @@ router.post('/delete-pacient/:id', checkTokenExistence, (req, res, next) => {
 
 });
 
+router.post('/get-pacient-details/:id', checkTokenExistence, (req, res, next) => {
+    try {
+        const userId = req.params.id;
+        db.query('SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta FROM Pacienti WHERE id_pacient = ?', [userId], function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                return res.status(500).json({ error: true, msg: 'Failed to fetch patient details.' });
+            }
+            if (!results.length) {
+                return res.status(404).json({ error: true, msg: 'Patient not found.' });
+            }
+            return res.status(200).send({ error: false, msg: 'Patient details fetched successfully.', data: results[0] });
+        });
+    } catch (error) {
+        console.log(error);
+    }
+});
 
 router.post('/getutilizator/:id', checkTokenExistence, (req, res, next) => {
     try {
