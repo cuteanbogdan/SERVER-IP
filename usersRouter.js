@@ -602,22 +602,6 @@ router.post("/getallingrijitori", checkTokenExistence, (req, res, next) => {
   }
 });
 
-// router.put('/update-user-role/:id', checkTokenExistence, (req, res) => {
-//     try {
-//         const userId = req.params.id;
-//         const { role } = req.body;
-//         db.query('UPDATE users_database SET role = ? WHERE id = ?', [role, userId], (err, result) => {
-//             if (err) {
-//                 console.log(err);
-//                 return res.status(500).json({ error: true, msg: 'Failed to update user role.' });
-//             }
-//             return res.status(200).json({ error: false, msg: 'User role updated successfully.' });
-//         });
-//     } catch (error) {
-//         console.log(error)
-//     }
-// });
-
 router.post("/delete-user/:email", checkTokenExistence, (req, res, next) => {
   try {
     const userEmail = req.params.email;
