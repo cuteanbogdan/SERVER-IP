@@ -713,6 +713,52 @@ router.post(
   }
 );
 
+router.put(
+  "/update-pacient-details/:id",
+  checkTokenExistence,
+  (req, res, next) => {
+    try {
+      const userId = req.params.id;
+      const updatedData = req.body;
+
+      let updateQuery = "UPDATE Pacienti SET ";
+      let updateParams = [];
+
+      // Loop through each property in the updatedData object and add it to the query
+      for (let property in updatedData) {
+        updateQuery += `${property} = ?, `;
+        updateParams.push(updatedData[property]);
+      }
+
+      // Remove the last comma and space from the query
+      updateQuery = updateQuery.slice(0, -2);
+
+      updateQuery += " WHERE id_pacient = ?";
+      updateParams.push(userId);
+
+      db.query(updateQuery, updateParams, function (error, results, fields) {
+        if (error) {
+          console.log(error);
+          return res
+            .status(500)
+            .json({ error: true, msg: "Failed to update patient details." });
+        }
+        if (results.affectedRows === 0) {
+          return res
+            .status(404)
+            .json({ error: true, msg: "Patient not found." });
+        }
+        return res.status(200).send({
+          error: false,
+          msg: "Patient details updated successfully.",
+        });
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+);
+
 router.post("/getutilizator/:id", checkTokenExistence, (req, res, next) => {
   try {
     const theToken = req.headers.authorization.split(" ")[1];
