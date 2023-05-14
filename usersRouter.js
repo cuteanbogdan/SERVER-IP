@@ -692,7 +692,7 @@ router.post(
         try {
             const userId = req.params.id;
             db.query(
-                "SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta FROM Pacienti WHERE id_pacient = ?",
+                "SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta, id_medical FROM Pacienti WHERE id_pacient = ?",
                 [userId],
                 function (error, results, fields) {
                     if (error) {
