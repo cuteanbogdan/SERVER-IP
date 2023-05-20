@@ -212,76 +212,98 @@ router.post(
                                                                 });
                                                             }
 
-                                                            // Now that we have an id_medical, create a Pacienti record
                                                             db.query(
-                                                                `INSERT INTO Pacienti (id_medical, rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, parola, varsta) VALUES (${resultDateMedicale.insertId}, ${db.escape(
-                                                                    roles[req.body.rol]
-                                                                )}, ${db.escape(req.body.cnp)}, ${db.escape(
-                                                                    req.body.nume
-                                                                )}, ${db.escape(req.body.prenume)}, ${db.escape(
-                                                                    req.body.adresa
-                                                                )}, ${db.escape(req.body.nr_tel)}, ${db.escape(
-                                                                    req.body.nr_tel_pers_contact
-                                                                )}, ${db.escape(
-                                                                    req.body.email
-                                                                )}, ${db.escape(
-                                                                    req.body.profesie
-                                                                )}, ${db.escape(req.body.loc_munca)}, ${db.escape(
-                                                                    hash
-                                                                )}, ${db.escape(req.body.varsta)})`,
-                                                                (err, result) => {
+                                                                `INSERT INTO date_colectate (TA, puls, temp_corp, greutate, glicemie, grad_iluminare, temp_amb, saturatie_gaz, umiditate, proximitate) 
+                                                        VALUES (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1)`,
+                                                                (err, resultDateColectate) => {
                                                                     if (err) {
                                                                         return res.status(400).send({
                                                                             msg: err,
                                                                         });
                                                                     }
 
-                                                                    if (req.body.supraveghetorId) {
-                                                                        // Update Supraveghetori table.
-                                                                        db.query(
-                                                                            `UPDATE Supraveghetori SET id_pacient = ${result.insertId
-                                                                            } WHERE id_supraveghetor = ${db.escape(
-                                                                                req.body.supraveghetorId
-                                                                            )}`,
-                                                                            (err, result) => {
-                                                                                if (err) {
-                                                                                    return res.status(400).send({
-                                                                                        msg: err,
-                                                                                    });
-                                                                                }
-                                                                            }
-                                                                        );
-                                                                    }
-
-                                                                    if (req.body.ingrijitorId) {
-                                                                        // Update Ingrijitori table.
-                                                                        db.query(
-                                                                            `UPDATE Ingrijitori SET id_pacient = ${result.insertId
-                                                                            } WHERE id_ingrijitor = ${db.escape(
-                                                                                req.body.ingrijitorId
-                                                                            )}`,
-                                                                            (err, result) => {
-                                                                                if (err) {
-                                                                                    return res.status(400).send({
-                                                                                        msg: err,
-                                                                                    });
-                                                                                }
-                                                                                return res.status(201).send({
-                                                                                    msg: "The patient has been registered with us and assigned to the caregiver and supervisor!",
+                                                                    db.query(
+                                                                        `INSERT INTO parametri_normali ( TA_min, TA_max, puls_min, puls_maax, temp_corp_min, temp_corp_max, greutate_min, greuatate_max, glicemie_min, glicemie_max, temp_amb_min, temp_amb_max, saturatie_gaz_min, saturatie_gaz_max, umiditate_min, umiditate_max, proximitate_max, proximitate_min) 
+                                                                VALUES (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1)`,
+                                                                        (err, resultDateParametri) => {
+                                                                            if (err) {
+                                                                                return res.status(400).send({
+                                                                                    msg: err,
                                                                                 });
                                                                             }
-                                                                        );
-                                                                    }
+                                                                            // Now that we have an id_medical,id_colectie, id_parametru, id_recomandare create a Pacienti record
+                                                                            db.query(
+                                                                                `INSERT INTO Pacienti (id_parametru, id_colectie, id_medical, rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, parola, varsta) VALUES (${resultDateParametri.insertId},${resultDateColectate.insertId},${resultDateMedicale.insertId}, ${db.escape(
+                                                                                    roles[req.body.rol]
+                                                                                )}, ${db.escape(req.body.cnp)}, ${db.escape(
+                                                                                    req.body.nume
+                                                                                )}, ${db.escape(req.body.prenume)}, ${db.escape(
+                                                                                    req.body.adresa
+                                                                                )}, ${db.escape(req.body.nr_tel)}, ${db.escape(
+                                                                                    req.body.nr_tel_pers_contact
+                                                                                )}, ${db.escape(
+                                                                                    req.body.email
+                                                                                )}, ${db.escape(
+                                                                                    req.body.profesie
+                                                                                )}, ${db.escape(req.body.loc_munca)}, ${db.escape(
+                                                                                    hash
+                                                                                )}, ${db.escape(req.body.varsta)})`,
+                                                                                (err, result) => {
+                                                                                    if (err) {
+                                                                                        return res.status(400).send({
+                                                                                            msg: err,
+                                                                                        });
+                                                                                    }
 
-                                                                    if (!req.body.supraveghetorId && !req.body.ingrijitorId) {
-                                                                        return res.status(201).send({
-                                                                            msg: "The patient has been registered with us, but has not been assigned to a caregiver or supervisor"
-                                                                        });
-                                                                    }
+                                                                                    if (req.body.supraveghetorId) {
+                                                                                        // Update Supraveghetori table.
+                                                                                        db.query(
+                                                                                            `UPDATE Supraveghetori SET id_pacient = ${result.insertId
+                                                                                            } WHERE id_supraveghetor = ${db.escape(
+                                                                                                req.body.supraveghetorId
+                                                                                            )}`,
+                                                                                            (err, result) => {
+                                                                                                if (err) {
+                                                                                                    return res.status(400).send({
+                                                                                                        msg: err,
+                                                                                                    });
+                                                                                                }
+                                                                                            }
+                                                                                        );
+                                                                                    }
+
+                                                                                    if (req.body.ingrijitorId) {
+                                                                                        // Update Ingrijitori table.
+                                                                                        db.query(
+                                                                                            `UPDATE Ingrijitori SET id_pacient = ${result.insertId
+                                                                                            } WHERE id_ingrijitor = ${db.escape(
+                                                                                                req.body.ingrijitorId
+                                                                                            )}`,
+                                                                                            (err, result) => {
+                                                                                                if (err) {
+                                                                                                    return res.status(400).send({
+                                                                                                        msg: err,
+                                                                                                    });
+                                                                                                }
+                                                                                                return res.status(201).send({
+                                                                                                    msg: "The patient has been registered with us and assigned to the caregiver and supervisor!",
+                                                                                                });
+                                                                                            }
+                                                                                        );
+                                                                                    }
+
+                                                                                    if (!req.body.supraveghetorId && !req.body.ingrijitorId) {
+                                                                                        return res.status(201).send({
+                                                                                            msg: "The patient has been registered with us, but has not been assigned to a caregiver or supervisor"
+                                                                                        });
+                                                                                    }
+                                                                                }
+                                                                            );
+                                                                        }
+                                                                    )
                                                                 }
                                                             );
-                                                        }
-                                                    );
+                                                        })
                                                 }
                                             });
                                         }
@@ -692,7 +714,7 @@ router.post(
         try {
             const userId = req.params.id;
             db.query(
-                "SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta, id_medical FROM Pacienti WHERE id_pacient = ?",
+                "SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta, id_medical, id_colectie,id_parametru FROM Pacienti WHERE id_pacient = ?",
                 [userId],
                 function (error, results, fields) {
                     if (error) {
@@ -743,6 +765,75 @@ router.post(
                     return res.status(200).send({
                         error: false,
                         msg: "Medical data fetched successfully.",
+                        data: results[0],
+                    });
+                }
+            );
+        } catch (error) {
+            console.log(error);
+        }
+    }
+);
+
+router.post(
+    "/get-date-colectate-patient/:id",
+    checkTokenExistence,
+    (req, res, next) => {
+        try {
+            const userId = req.params.id;
+            db.query(
+                "SELECT TA, puls, temp_corp, greutate, glicemie, grad_iluminare, temp_amb, saturatie_gaz, umiditate, proximitate FROM date_colectate WHERE id_colectie = ?",
+                [userId],
+                function (error, results, fields) {
+                    if (error) {
+                        console.log(error);
+                        return res
+                            .status(500)
+                            .json({ error: true, msg: "Failed to fetch collected data." });
+                    }
+                    if (!results.length) {
+                        return res
+                            .status(404)
+                            .json({ error: true, msg: "Collected data not found." });
+                    }
+                    return res.status(200).send({
+                        error: false,
+                        msg: "Collected data fetched successfully.",
+                        data: results[0],
+                    });
+                }
+            );
+        } catch (error) {
+            console.log(error);
+        }
+    }
+);
+
+
+router.post(
+    "/get-parametri/:id",
+    checkTokenExistence,
+    (req, res, next) => {
+        try {
+            const userId = req.params.id;
+            db.query(
+                "SELECT TA_min, TA_max, puls_min, puls_maax, temp_corp_min, temp_corp_max, greutate_min, greuatate_max, glicemie_min, glicemie_max, temp_amb_min, temp_amb_max, saturatie_gaz_min, saturatie_gaz_max, umiditate_min, umiditate_max, proximitate_max, proximitate_min FROM parametri_normali WHERE id_parametru = ?",
+                [userId],
+                function (error, results, fields) {
+                    if (error) {
+                        console.log(error);
+                        return res
+                            .status(500)
+                            .json({ error: true, msg: "Failed to fetch parametri data." });
+                    }
+                    if (!results.length) {
+                        return res
+                            .status(404)
+                            .json({ error: true, msg: "Parametri data not found." });
+                    }
+                    return res.status(200).send({
+                        error: false,
+                        msg: "Parametri data fetched successfully.",
                         data: results[0],
                     });
                 }
@@ -837,6 +928,53 @@ router.put(
                 return res.status(200).send({
                     error: false,
                     msg: "Medical details updated successfully.",
+                });
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    }
+);
+
+
+router.put(
+    "/update-parametri/:id",
+    checkTokenExistence,
+    (req, res, next) => {
+        try {
+            const userId = req.params.id;
+            const updatedData = req.body;
+
+            let updateQuery = "UPDATE parametri_normali SET ";
+            let updateParams = [];
+
+            // Loop through each property in the updatedData object and add it to the query
+            for (let property in updatedData) {
+                updateQuery += `${property} = ?, `;
+                updateParams.push(updatedData[property]);
+            }
+
+            // Remove the last comma and space from the query
+            updateQuery = updateQuery.slice(0, -2);
+
+            updateQuery += " WHERE id_parametru = ?";
+            updateParams.push(userId);
+
+            db.query(updateQuery, updateParams, function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    return res
+                        .status(500)
+                        .json({ error: true, msg: "Failed to update parametri details." });
+                }
+                if (results.affectedRows === 0) {
+                    return res
+                        .status(404)
+                        .json({ error: true, msg: "No medical record found for this patient." });
+                }
+                return res.status(200).send({
+                    error: false,
+                    msg: "Parametri details updated successfully.",
                 });
             });
         } catch (error) {
