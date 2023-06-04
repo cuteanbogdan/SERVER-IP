@@ -523,19 +523,19 @@ router.post("/login", loginValidation, (req, res, next) => {
     }
 });
 
-router.post("/get-user", checkTokenExistence, (req, res, next) => {
+router.post("/get-ingrijitor", checkTokenExistence, (req, res, next) => {
     try {
         const theToken = req.headers.authorization.split(" ")[1];
         const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
         db.query(
-            "SELECT * FROM users where id=?",
-            decoded.id,
+            "SELECT email, id_ingrijitor, id_pacient, nume, prenume FROM Ingrijitori where id_ingrijitor = ?",
+            [decoded.id_ingrijitor],
             function (error, results, fields) {
                 if (error) {
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to fetch user." });
+                        .json({ error: true, msg: "Failed to fetch ingrijitor." });
                 }
                 return res.send({
                     error: false,
@@ -544,6 +544,7 @@ router.post("/get-user", checkTokenExistence, (req, res, next) => {
                 });
             }
         );
+
     } catch (error) {
         console.log(error);
     }
@@ -1103,28 +1104,6 @@ router.put(
         }
     }
 );
-
-
-router.post("/getutilizator/:id", checkTokenExistence, (req, res, next) => {
-    try {
-        const theToken = req.headers.authorization.split(" ")[1];
-        const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
-        db.query(
-            "SELECT * FROM users where id=?",
-            req.params.id,
-            function (error, results, fields) {
-                if (error) throw error;
-                return res.send({
-                    error: false,
-                    data: results[0],
-                    msg: "Fetch Successfully.",
-                });
-            }
-        );
-    } catch (error) {
-        console.log(error);
-    }
-});
 
 router.post("/verifytoken", (req, res) => {
     try {
