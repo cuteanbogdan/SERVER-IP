@@ -714,7 +714,7 @@ router.post(
         try {
             const userId = req.params.id;
             db.query(
-                "SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta, id_medical, id_colectie,id_parametru FROM Pacienti WHERE id_pacient = ?",
+                "SELECT rol, cnp, nume, prenume, adresa, nr_tel, nr_tel_pers_contact, email, profesie, loc_munca, varsta, id_medical, id_colectie, id_parametru, id_recomandare, id_alarma FROM Pacienti WHERE id_pacient = ?",
                 [userId],
                 function (error, results, fields) {
                     if (error) {
@@ -809,6 +809,81 @@ router.post(
     }
 );
 
+router.get(
+    "/get-alarm-details/:id",
+    checkTokenExistence,
+    (req, res, next) => {
+        try {
+            const alarmId = req.params.id;
+
+            db.query(
+                "SELECT * FROM Alarme WHERE id_alarma = ?",
+                [alarmId],
+                function (error, results, fields) {
+                    if (error) {
+                        console.log(error);
+                        return res
+                            .status(500)
+                            .json({ error: true, msg: "Failed to fetch alarm details." });
+                    }
+                    if (!results.length) {
+                        return res
+                            .status(404)
+                            .json({ error: true, msg: "Alarm not found." });
+                    }
+                    return res.status(200).send({
+                        error: false,
+                        msg: "Alarm details fetched successfully.",
+                        data: results[0],
+                    });
+                }
+            );
+        } catch (error) {
+            console.log(error);
+            return res
+                .status(500)
+                .json({ error: true, msg: "An error occurred while fetching alarm details." });
+        }
+    }
+);
+
+router.get(
+    "/get-recomandari-details/:id",
+    checkTokenExistence,
+    (req, res, next) => {
+        try {
+            const recomandareId = req.params.id;
+
+            db.query(
+                "SELECT * FROM recomandari WHERE id_recomandare = ?",
+                [recomandareId],
+                function (error, results, fields) {
+                    if (error) {
+                        console.log(error);
+                        return res
+                            .status(500)
+                            .json({ error: true, msg: "Failed to fetch recomandari details." });
+                    }
+                    if (!results.length) {
+                        return res
+                            .status(404)
+                            .json({ error: true, msg: "Recomandare not found." });
+                    }
+                    return res.status(200).send({
+                        error: false,
+                        msg: "Recomandari details fetched successfully.",
+                        data: results[0],
+                    });
+                }
+            );
+        } catch (error) {
+            console.log(error);
+            return res
+                .status(500)
+                .json({ error: true, msg: "An error occurred while fetching recomandari details." });
+        }
+    }
+);
 
 router.post(
     "/get-parametri/:id",
@@ -928,6 +1003,52 @@ router.put(
                 return res.status(200).send({
                     error: false,
                     msg: "Medical details updated successfully.",
+                });
+            });
+        } catch (error) {
+            console.log(error);
+        }
+    }
+);
+router.put(
+    "/update-date-colectate/:id",
+    checkTokenExistence,
+    (req, res, next) => {
+        try {
+            const id_colectie = req.params.id;
+            const updatedData = req.body;
+
+            let updateQuery = "UPDATE Date_Colectate SET ";
+            let updateParams = [];
+
+            // Loop through each property in the updatedData object and add it to the query
+            for (let property in updatedData) {
+                updateQuery += `${property} = ?, `;
+                updateParams.push(updatedData[property]);
+            }
+
+            // Remove the last comma and space from the query
+            updateQuery = updateQuery.slice(0, -2);
+
+            // Now, instead of updating where id_medical = userId, we update where id_colectie = userId
+            updateQuery += " WHERE id_colectie = ?";
+            updateParams.push(id_colectie);
+
+            db.query(updateQuery, updateParams, function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    return res
+                        .status(500)
+                        .json({ error: true, msg: "Failed to update collected date details." });
+                }
+                if (results.affectedRows === 0) {
+                    return res
+                        .status(404)
+                        .json({ error: true, msg: "No collected date record found for this user." });
+                }
+                return res.status(200).send({
+                    error: false,
+                    msg: "Collected date details updated successfully.",
                 });
             });
         } catch (error) {
