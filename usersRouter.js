@@ -550,6 +550,33 @@ router.post("/get-ingrijitor", checkTokenExistence, (req, res, next) => {
     }
 });
 
+router.post("/get-supraveghetor", checkTokenExistence, (req, res, next) => {
+    try {
+        const theToken = req.headers.authorization.split(" ")[1];
+        const decoded = jwt.verify(theToken, process.env.JWT_SECRET);
+        db.query(
+            "SELECT email, id_supraveghetor, id_pacient, nume, prenume FROM Supraveghetori where id_supraveghetor = ?",
+            [decoded.id_supraveghetor],
+            function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    return res
+                        .status(500)
+                        .json({ error: true, msg: "Failed to fetch supraveghetor." });
+                }
+                return res.send({
+                    error: false,
+                    data: results[0],
+                    msg: "Fetch Successfully.",
+                });
+            }
+        );
+
+    } catch (error) {
+        console.log(error);
+    }
+});
+
 router.post("/getallusers", checkTokenExistence, (req, res, next) => {
     try {
         db.query(
