@@ -870,6 +870,10 @@ router.get(
                             .status(404)
                             .json({ error: true, msg: "Recomandare not found." });
                     }
+
+                    const dateInLocalTime = new Date(results[0].timp).toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" });
+                    results[0].timp = dateInLocalTime;
+
                     return res.status(200).send({
                         error: false,
                         msg: "Recomandari details fetched successfully.",
@@ -1104,6 +1108,50 @@ router.put(
         }
     }
 );
+
+router.post("/recomandare-doctor/:id", checkTokenExistence, (req, res, next) => {
+    try {
+        const id_pacient = req.params.id;
+        const recomandare = req.body.recomandareDoctor;
+        const timp = req.body.timpDoctor;
+        const detalii = req.body.detaliiDoctor;
+
+        const insertQuery = "INSERT INTO recomandari (recomandare, timp, detalii) VALUES (?, ?, ?)";
+        const insertParams = [recomandare, timp, detalii];
+
+        db.query(insertQuery, insertParams, function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                return res
+                    .status(500)
+                    .json({ error: true, msg: "Failed to insert recommendation." });
+            }
+
+            // Get the ID of the newly created recommendation
+            const id_recomandare = results.insertId;
+
+            // Now we will update the patient row with this new recommendation ID
+            const updateQuery = "UPDATE Pacienti SET id_recomandare = ? WHERE id_pacient = ?";
+            const updateParams = [id_recomandare, id_pacient];
+
+            db.query(updateQuery, updateParams, function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    return res
+                        .status(500)
+                        .json({ error: true, msg: "Failed to update patient with recommendation." });
+                }
+                return res.status(200).send({
+                    error: false,
+                    msg: "Recomandare adaugata cu success",
+                });
+            });
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ error: true, msg: "An error occurred." });
+    }
+});
 
 router.post("/verifytoken", (req, res) => {
     try {
