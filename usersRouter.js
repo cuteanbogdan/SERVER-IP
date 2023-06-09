@@ -223,7 +223,7 @@ router.post(
                                                                     }
 
                                                                     db.query(
-                                                                        `INSERT INTO parametri_normali ( TA_min, TA_max, puls_min, puls_maax, temp_corp_min, temp_corp_max, greutate_min, greuatate_max, glicemie_min, glicemie_max, temp_amb_min, temp_amb_max, saturatie_gaz_min, saturatie_gaz_max, umiditate_min, umiditate_max, proximitate_max, proximitate_min) 
+                                                                        `INSERT INTO parametri_normali ( TA_min, TA_max, puls_min, puls_max, temp_corp_min, temp_corp_max, greutate_min, greutate_max, glicemie_min, glicemie_max, temp_amb_min, temp_amb_max, saturatie_gaz_min, saturatie_gaz_max, umiditate_min, umiditate_max, proximitate_min, proximitate_max) 
                                                                 VALUES (-1, -1, -1, -1, -1, -1, -1, -1, -1, -1,-1, -1, -1, -1, -1, -1, -1, -1)`,
                                                                         (err, resultDateParametri) => {
                                                                             if (err) {
@@ -508,7 +508,6 @@ router.post("/login", loginValidation, (req, res, next) => {
                             return res.status(200).send({
                                 msg: "Logged in!",
                                 token,
-                                user: result[0],
                             });
                         }
                         return res.status(401).send({
@@ -581,15 +580,15 @@ router.post("/getallusers", checkTokenExistence, (req, res, next) => {
     try {
         db.query(
             `
-    SELECT id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Doctori
+    SELECT id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume, prenume FROM Doctori
     UNION ALL
-    SELECT NULL as id_doctor, id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Pacienti 
+    SELECT NULL as id_doctor, id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume, prenume FROM Pacienti 
     UNION ALL
-    SELECT NULL as id_doctor, NULL as id_pacient, id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Ingrijitori 
+    SELECT NULL as id_doctor, NULL as id_pacient, id_ingrijitor, NULL as id_supraveghetor, NULL as id_administrator, email, parola, rol, nume, prenume FROM Ingrijitori 
     UNION ALL
-    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, id_supraveghetor, NULL as id_administrator, email, parola, rol, nume FROM Supraveghetori 
+    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, id_supraveghetor, NULL as id_administrator, email, parola, rol, nume, prenume FROM Supraveghetori 
     UNION ALL
-    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, id_administrator, email, parola, rol, nume FROM Administratori 
+    SELECT NULL as id_doctor, NULL as id_pacient, NULL as id_ingrijitor, NULL as id_supraveghetor, id_administrator, email, parola, rol, nume, prenume FROM Administratori 
 `,
             function (error, results, fields) {
                 if (error) {
@@ -713,27 +712,99 @@ router.post("/delete-user/:email", checkTokenExistence, (req, res, next) => {
 });
 
 router.post("/delete-pacient/:id", checkTokenExistence, (req, res, next) => {
+    const userId = req.params.id;
+
+    // Set the id_pacient field to NULL in the Ingrijitori table
+    db.query(
+        "UPDATE Ingrijitori SET id_pacient = NULL WHERE id_pacient = ?",
+        [userId],
+        function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                return res
+                    .status(500)
+                    .json({ error: true, msg: "Failed to update Ingrijitori entries." });
+            }
+
+            // Set the id_pacient field to NULL in the Supraveghetori table
+            db.query(
+                "UPDATE Supraveghetori SET id_pacient = NULL WHERE id_pacient = ?",
+                [userId],
+                function (error, results, fields) {
+                    if (error) {
+                        console.log(error);
+                        return res
+                            .status(500)
+                            .json({ error: true, msg: "Failed to update Supraveghetori entries." });
+                    }
+
+                    // Delete the Pacienti
+                    db.query(
+                        "DELETE FROM Pacienti WHERE id_pacient = ?",
+                        [userId],
+                        function (error, results, fields) {
+                            if (error) {
+                                console.log(error);
+                                return res
+                                    .status(500)
+                                    .json({ error: true, msg: "Failed to delete user." });
+                            }
+                            return res
+                                .status(200)
+                                .send({ error: false, msg: "Pacient deleted successfully." });
+                        }
+                    );
+                }
+            );
+        }
+    );
+});
+
+router.post("/clear-alarma/:id", checkTokenExistence, async (req, res, next) => {
     try {
-        const userId = req.params.id;
+        const alarmaId = req.params.id;
+        // Step 1: Set the id_alarma field to NULL in the Pacienti table
         db.query(
-            "DELETE FROM Pacienti WHERE id_pacient = ?",
-            [userId],
+            "UPDATE Pacienti SET id_alarma = NULL WHERE id_alarma = ?",
+            [alarmaId],
             function (error, results, fields) {
                 if (error) {
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to delete user." });
+                        .json({ error: true, msg: "Failed to update Pacienti table" });
                 }
-                return res
-                    .status(200)
-                    .send({ error: false, msg: "Pacient deleted successfully." });
+                // Step 2: Delete the alarm
+                db.query(
+                    "DELETE FROM Alarme WHERE id_alarma = ?",
+                    [alarmaId],
+                    function (error, results, fields) {
+                        if (error) {
+                            console.log(error);
+                            return res
+                                .status(500)
+                                .json({ error: true, msg: "Failed to clear alarma" });
+                        }
+                        if (results.affectedRows === 0) {
+                            return res
+                                .status(404)
+                                .json({ error: true, msg: "Alarma not found" });
+                        }
+                        return res
+                            .status(200)
+                            .json({ error: false, msg: "Alarma tratata cu success" });
+                    }
+                );
             }
         );
     } catch (error) {
         console.log(error);
+        return res
+            .status(500)
+            .json({ error: true, msg: "An error occurred on the server" });
     }
 });
+
 
 router.post(
     "/get-pacient-details/:id",
@@ -924,7 +995,7 @@ router.post(
         try {
             const userId = req.params.id;
             db.query(
-                "SELECT TA_min, TA_max, puls_min, puls_maax, temp_corp_min, temp_corp_max, greutate_min, greuatate_max, glicemie_min, glicemie_max, temp_amb_min, temp_amb_max, saturatie_gaz_min, saturatie_gaz_max, umiditate_min, umiditate_max, proximitate_max, proximitate_min FROM parametri_normali WHERE id_parametru = ?",
+                "SELECT TA_min, TA_max, puls_min, puls_max, temp_corp_min, temp_corp_max, greutate_min, greutate_max, glicemie_min, glicemie_max, temp_amb_min, temp_amb_max, saturatie_gaz_min, saturatie_gaz_max, umiditate_min, umiditate_max, proximitate_min, proximitate_max FROM parametri_normali WHERE id_parametru = ?",
                 [userId],
                 function (error, results, fields) {
                     if (error) {
@@ -950,6 +1021,35 @@ router.post(
         }
     }
 );
+
+router.get("/get-date-istorice", checkTokenExistence, (req, res, next) => {
+    try {
+        db.query(
+            "SELECT * FROM istoric_date",
+            [],
+            function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    return res
+                        .status(500)
+                        .json({ error: true, msg: "Failed to fetch istoric date data." });
+                }
+                if (!results.length) {
+                    return res
+                        .status(404)
+                        .json({ error: true, msg: "Istoric date data not found." });
+                }
+                return res.status(200).send({
+                    error: false,
+                    msg: "Istoric date data fetched successfully.",
+                    data: results,
+                });
+            }
+        );
+    } catch (error) {
+        console.log(error);
+    }
+});
 
 router.put(
     "/update-pacient-details/:id",
@@ -1042,53 +1142,66 @@ router.put(
         }
     }
 );
-router.put(
-    "/update-date-colectate/:id",
-    checkTokenExistence,
-    (req, res, next) => {
-        try {
-            const id_colectie = req.params.id;
-            const updatedData = req.body;
 
-            let updateQuery = "UPDATE Date_Colectate SET ";
-            let updateParams = [];
+router.put("/update-date-colectate/:id", checkTokenExistence, (req, res, next) => {
+    try {
+        const id_colectie = req.params.id;
+        const updatedData = req.body;
 
-            // Loop through each property in the updatedData object and add it to the query
-            for (let property in updatedData) {
-                updateQuery += `${property} = ?, `;
-                updateParams.push(updatedData[property]);
+        let updateQuery = "UPDATE Date_Colectate SET ";
+        let updateParams = [];
+
+        // Loop through each property in the updatedData object and add it to the query
+        for (let property in updatedData) {
+            updateQuery += `${property} = ?, `;
+            updateParams.push(updatedData[property]);
+        }
+
+        // Remove the last comma and space from the query
+        updateQuery = updateQuery.slice(0, -2);
+
+        updateQuery += " WHERE id_colectie = ?";
+        updateParams.push(id_colectie);
+
+        db.query(updateQuery, updateParams, function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                return res
+                    .status(500)
+                    .json({ error: true, msg: "Failed to update collected date details." });
             }
 
-            // Remove the last comma and space from the query
-            updateQuery = updateQuery.slice(0, -2);
+            if (results.affectedRows === 0) {
+                return res
+                    .status(404)
+                    .json({ error: true, msg: "No collected date record found for this user." });
+            }
 
-            // Now, instead of updating where id_medical = userId, we update where id_colectie = userId
-            updateQuery += " WHERE id_colectie = ?";
-            updateParams.push(id_colectie);
-
-            db.query(updateQuery, updateParams, function (error, results, fields) {
-                if (error) {
-                    console.log(error);
+            // create new row in istoric_date table
+            const istoricData = {
+                tensiune: updatedData.TA,
+                temperatura_corp: updatedData.temp_corp,
+                greutate: updatedData.greutate,
+                glicemie: updatedData.glicemie,
+            };
+            let istoricQuery = "INSERT INTO istoric_date SET ?";
+            db.query(istoricQuery, istoricData, function (err, results) {
+                if (err) {
+                    console.log(err);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to update collected date details." });
-                }
-                if (results.affectedRows === 0) {
-                    return res
-                        .status(404)
-                        .json({ error: true, msg: "No collected date record found for this user." });
+                        .json({ error: true, msg: "Failed to insert data into istoric_date." });
                 }
                 return res.status(200).send({
                     error: false,
-                    msg: "Collected date details updated successfully.",
+                    msg: "Collected date details updated successfully and data added to istoric_date.",
                 });
             });
-        } catch (error) {
-            console.log(error);
-        }
+        });
+    } catch (error) {
+        console.log(error);
     }
-);
-
+});
 
 router.put(
     "/update-parametri/:id",
