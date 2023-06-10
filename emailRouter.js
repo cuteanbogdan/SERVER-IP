@@ -23,7 +23,7 @@ function sendEmail(email, token) {
     to: email,
     subject: "Link-ul pentru resetarea parolei - SmartCare.com",
     html:
-      '<p>Ati cerut resetarea parolei, pentru a merge mai departe va rugam accesati <a href="http://localhost:3000/update-password?token=' +
+      '<p>Ati cerut resetarea parolei, pentru a merge mai departe va rugam accesati <a href="https://smartcareip.netlify.app/update-password?token=' +
       token +
       '">link</a> pentru a va putea reseta parola</p>',
   };
