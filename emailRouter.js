@@ -21,11 +21,11 @@ function sendEmail(email, token) {
   var mailOptions = {
     from: "cutybogdy@yahoo.com",
     to: email,
-    subject: "Reset Password Link - SmartCare.com",
+    subject: "Link-ul pentru resetarea parolei - SmartCare.com",
     html:
-      '<p>You requested for reset password, kindly use this <a href="http://localhost:3000/update-password?token=' +
+      '<p>Ati cerut resetarea parolei, pentru a merge mai departe va rugam accesati <a href="http://localhost:3000/update-password?token=' +
       token +
-      '">link</a> to reset your password</p>',
+      '">link</a> pentru a va putea reseta parola</p>',
   };
 
   mail.sendMail(mailOptions, function (error, info) {
@@ -44,24 +44,24 @@ router.post("/change-password-email", async function (req, res) {
     db.query(
       `(
             SELECT email, 'Administratori' as table_name FROM Administratori WHERE LOWER(email) = LOWER(${db.escape(
-              email
-            )})
+        email
+      )})
         ) UNION (
             SELECT email, 'Pacienti' as table_name FROM Pacienti WHERE LOWER(email) = LOWER(${db.escape(
-              email
-            )})
+        email
+      )})
         ) UNION (
             SELECT email, 'Doctori' as table_name FROM Doctori WHERE LOWER(email) = LOWER(${db.escape(
-              email
-            )})
+        email
+      )})
         ) UNION (
             SELECT email, 'Ingrijitori' as table_name FROM Ingrijitori WHERE LOWER(email) = LOWER(${db.escape(
-              email
-            )})
+        email
+      )})
         ) UNION (
             SELECT email, 'Supraveghetori' as table_name FROM Supraveghetori WHERE LOWER(email) = LOWER(${db.escape(
-              email
-            )})
+        email
+      )})
         );`,
       async function (err, result) {
         if (err) {
@@ -97,25 +97,25 @@ router.post("/change-password-email", async function (req, res) {
 
             res.status(200).json({
               status: "success",
-              msg: "The reset password link has been sent to your email address: ",
+              msg: "Link-ul pentru resetare a fost trimis catre adresa dumneavoastra: ",
             });
           } else {
             res.status(500).json({
               status: "error",
-              msg: "Something went wrong. Please try again",
+              msg: "Eroare la server, va rugam incercati din nou",
             });
           }
         } else {
           res.status(404).json({
             status: "error",
-            msg: "The Email is not registered with us",
+            msg: "Acest Email nu este inregistrat la noi!",
           });
         }
       }
     );
   } catch (error) {
     console.error("ERROR", error.name);
-    res.status(500).json({ msg: "Internal server error" });
+    res.status(500).json({ msg: "Eroare interna server" });
   }
 });
 
@@ -128,31 +128,31 @@ router.post("/update-password", function (req, res, next) {
     db.query(
       `(
           SELECT email, 'Administratori' as table_name FROM Administratori WHERE changePasswordToken = ${db.escape(
-            token
-          )}
+        token
+      )}
         ) UNION (
           SELECT email, 'Pacienti' as table_name FROM Pacienti WHERE changePasswordToken = ${db.escape(
-            token
-          )}
+        token
+      )}
         ) UNION (
           SELECT email, 'Doctori' as table_name FROM Doctori WHERE changePasswordToken = ${db.escape(
-            token
-          )}
+        token
+      )}
         ) UNION (
           SELECT email, 'Ingrijitori' as table_name FROM Ingrijitori WHERE changePasswordToken = ${db.escape(
-            token
-          )}
+        token
+      )}
         ) UNION (
           SELECT email, 'Supraveghetori' as table_name FROM Supraveghetori WHERE changePasswordToken = ${db.escape(
-            token
-          )}
+        token
+      )}
         );`,
       function (err, result) {
         if (err) {
           console.error(err);
           return res.status(500).json({
             status: "error",
-            msg: "Internal server error",
+            msg: "Eroare interna server",
           });
         }
 
@@ -174,7 +174,7 @@ router.post("/update-password", function (req, res, next) {
                     console.error(err);
                     return res.status(500).json({
                       status: "error",
-                      msg: "Internal server error",
+                      msg: "Eroare interna server",
                     });
                   }
                 }
@@ -182,21 +182,21 @@ router.post("/update-password", function (req, res, next) {
 
               res.status(200).json({
                 status: "success",
-                msg: "Your password has been updated successfully",
+                msg: "Parola dumneavoastra a fost actualizata cu success",
               });
             });
           });
         } else {
           res.status(400).json({
             status: "error",
-            msg: "Invalid link; please try again",
+            msg: "Link invalid, va rugam incercati din nou",
           });
         }
       }
     );
   } catch (error) {
     console.error("ERROR", error.name);
-    res.status(500).json({ msg: "Internal server error" });
+    res.status(500).json({ msg: "Eroare interna server" });
   }
 });
 

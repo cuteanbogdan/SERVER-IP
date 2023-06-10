@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("./db.js");
-const { signupValidation, loginValidation } = require("./validation.js");
+const { signupValidation, loginValidation, cnpValidation } = require("./validation.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { validationResult } = require("express-validator");
@@ -22,7 +22,7 @@ const checkTokenExistence = (req, res, next) => {
             !req.headers.authorization.split(" ")[1]
         ) {
             return res.status(422).json({
-                message: "Please provide the token",
+                message: "Va rugam sa va autentificati",
             });
         }
         const token = req.headers.authorization.split(" ")[1];
@@ -30,11 +30,11 @@ const checkTokenExistence = (req, res, next) => {
             if (err) {
                 if (err instanceof jwt.TokenExpiredError) {
                     return res.status(422).json({
-                        message: "Token has expired, please login again!",
+                        message: "Jetonul a expirat, va rugam sa va autentificati",
                     });
                 }
                 return res.status(422).json({
-                    message: "The token is not working",
+                    message: "Jetonul nu functioneaza",
                 });
             }
 
@@ -42,19 +42,20 @@ const checkTokenExistence = (req, res, next) => {
                 next();
             } else {
                 return res.status(422).json({
-                    message: "Please provide an original token",
+                    message: "Eroare jeton",
                 });
             }
         });
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "Eroare interna server" });
     }
 };
 
 router.post(
     "/register",
     signupValidation,
+    cnpValidation,
     checkTokenExistence,
     (req, res, next) => {
         const errors = validationResult(req);
@@ -88,7 +89,7 @@ router.post(
                 (err, result) => {
                     if (result.length) {
                         return res.status(409).send({
-                            msg: "This user email is already in use!",
+                            msg: "Email-ul este deja folosit!",
                         });
                     } else {
                         switch (req.body.rol) {
@@ -100,7 +101,7 @@ router.post(
                                     (err, result) => {
                                         if (result.length) {
                                             return res.status(409).send({
-                                                msg: "This administrator is already in use!",
+                                                msg: "Email-ul este deja folosit!",
                                             });
                                         } else {
                                             // username is available
@@ -127,7 +128,7 @@ router.post(
                                                                 });
                                                             }
                                                             return res.status(201).send({
-                                                                msg: "The user has been registered with us!",
+                                                                msg: "Utilizatorul a fost creat cu success!",
                                                             });
                                                         }
                                                     );
@@ -145,7 +146,7 @@ router.post(
                                     (err, result) => {
                                         if (result.length) {
                                             return res.status(409).send({
-                                                msg: "This doctor is already in use!",
+                                                msg: "Email-ul este deja folosit!",
                                             });
                                         } else {
                                             // username is available
@@ -172,7 +173,7 @@ router.post(
                                                                 });
                                                             }
                                                             return res.status(201).send({
-                                                                msg: "The doctor has been registered with us!",
+                                                                msg: "Utilizatorul a fost creat cu success!",
                                                             });
                                                         }
                                                     );
@@ -190,7 +191,7 @@ router.post(
                                     (err, result) => {
                                         if (result.length) {
                                             return res.status(409).send({
-                                                msg: "This patient is already in use!",
+                                                msg: "Email-ul este deja folosit!",
                                             });
                                         } else {
                                             // email is available
@@ -286,7 +287,7 @@ router.post(
                                                                                                     });
                                                                                                 }
                                                                                                 return res.status(201).send({
-                                                                                                    msg: "The patient has been registered with us and assigned to the caregiver and supervisor!",
+                                                                                                    msg: "Utilizatorul a fost creat cu success!",
                                                                                                 });
                                                                                             }
                                                                                         );
@@ -294,7 +295,7 @@ router.post(
 
                                                                                     if (!req.body.supraveghetorId && !req.body.ingrijitorId) {
                                                                                         return res.status(201).send({
-                                                                                            msg: "The patient has been registered with us, but has not been assigned to a caregiver or supervisor"
+                                                                                            msg: "Utilizatorul a fost creat cu success!"
                                                                                         });
                                                                                     }
                                                                                 }
@@ -318,7 +319,7 @@ router.post(
                                     (err, result) => {
                                         if (result.length) {
                                             return res.status(409).send({
-                                                msg: "This ingrijitor is already in use!",
+                                                msg: "Email-ul este deja folosit!",
                                             });
                                         } else {
                                             // username is available
@@ -345,7 +346,7 @@ router.post(
                                                                 });
                                                             }
                                                             return res.status(201).send({
-                                                                msg: "The ingrijitor has been registered with us!",
+                                                                msg: "Utilizatorul a fost creat cu success!",
                                                             });
                                                         }
                                                     );
@@ -363,7 +364,7 @@ router.post(
                                     (err, result) => {
                                         if (result.length) {
                                             return res.status(409).send({
-                                                msg: "This supraveghetor is already in use!",
+                                                msg: "Email-ul este deja folosit!",
                                             });
                                         } else {
                                             // username is available
@@ -390,7 +391,7 @@ router.post(
                                                                 });
                                                             }
                                                             return res.status(201).send({
-                                                                msg: "The supraveghetor has been registered with us!",
+                                                                msg: "Utilizatorul a fost creat cu success!",
                                                             });
                                                         }
                                                     );
@@ -447,7 +448,7 @@ router.post("/login", loginValidation, (req, res, next) => {
                 }
                 if (!result.length) {
                     return res.status(401).send({
-                        msg: "Email or password is incorrect!",
+                        msg: "Email-ul sau parola sunt incorecte",
                     });
                 }
                 // check password
@@ -459,7 +460,7 @@ router.post("/login", loginValidation, (req, res, next) => {
                         if (bErr) {
                             console.log(bErr);
                             return res.status(401).send({
-                                msg: "Email or password is incorrect!",
+                                msg: "Email-ul sau parola sunt incorecte",
                             });
                         }
                         if (bResult) {
@@ -506,12 +507,12 @@ router.post("/login", loginValidation, (req, res, next) => {
                                 expiresIn: "24h",
                             });
                             return res.status(200).send({
-                                msg: "Logged in!",
+                                msg: "Logat!",
                                 token,
                             });
                         }
                         return res.status(401).send({
-                            msg: "Email or password is incorrect!",
+                            msg: "Email-ul sau parola sunt incorecte",
                         });
                     }
                 );
@@ -534,12 +535,12 @@ router.post("/get-ingrijitor", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to fetch ingrijitor." });
+                        .json({ error: true, msg: "Eroare la ingrijitor" });
                 }
                 return res.send({
                     error: false,
                     data: results[0],
-                    msg: "Fetch Successfully.",
+                    msg: "Cerere cu success pentru ingrijitor.",
                 });
             }
         );
@@ -561,12 +562,12 @@ router.post("/get-supraveghetor", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to fetch supraveghetor." });
+                        .json({ error: true, msg: "Eroare la supraveghetor." });
                 }
                 return res.send({
                     error: false,
                     data: results[0],
-                    msg: "Fetch Successfully.",
+                    msg: "Cerere cu success pentru supraveghetor.",
                 });
             }
         );
@@ -595,11 +596,11 @@ router.post("/getallusers", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to fetch users." });
+                        .json({ error: true, msg: "Eroare la utilizatori." });
                 }
                 return res
                     .status(200)
-                    .send({ error: false, data: results, msg: "Fetch Successfully." });
+                    .send({ error: false, data: results, msg: "Cerere cu success pentru utilizatori." });
             }
         );
     } catch (error) {
@@ -617,11 +618,11 @@ router.post("/getallpacients", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .send({ error: true, msg: "Failed to retrieve data." });
+                        .send({ error: true, msg: "Eroare la pacienti." });
                 }
                 return res
                     .status(200)
-                    .send({ error: false, data: results, msg: "Fetch Successfully." });
+                    .send({ error: false, data: results, msg: "Cerere cu success pentru pacienti." });
             }
         );
     } catch (error) {
@@ -639,11 +640,11 @@ router.post("/getallsupraveghetori", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .send({ error: true, msg: "Failed to retrieve data." });
+                        .send({ error: true, msg: "Eroare la supraveghetori." });
                 }
                 return res
                     .status(200)
-                    .send({ error: false, data: results, msg: "Fetch Successfully." });
+                    .send({ error: false, data: results, msg: "Cerere cu success pentru supraveghetori." });
             }
         );
     } catch (error) {
@@ -661,11 +662,11 @@ router.post("/getallingrijitori", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .send({ error: true, msg: "Failed to retrieve data." });
+                        .send({ error: true, msg: "Eroare la ingrijitori." });
                 }
                 return res
                     .status(200)
-                    .send({ error: false, data: results, msg: "Fetch Successfully." });
+                    .send({ error: false, data: results, msg: "Cerere cu success pentru ingrijitori." });
             }
         );
     } catch (error) {
@@ -688,7 +689,7 @@ router.post("/delete-user/:email", checkTokenExistence, (req, res, next) => {
             if (index >= tables.length) {
                 return res
                     .status(200)
-                    .send({ error: false, msg: "User deleted successfully." });
+                    .send({ error: false, msg: "Utilizator sters cu success!" });
             }
             db.query(
                 `DELETE FROM ${tables[index]} WHERE LOWER(email) = LOWER(?)`,
@@ -698,7 +699,7 @@ router.post("/delete-user/:email", checkTokenExistence, (req, res, next) => {
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to delete user." });
+                            .json({ error: true, msg: "Eroare la stergerea utilizatorului!" });
                     }
 
                     deleteFromTable(index + 1);
@@ -714,44 +715,86 @@ router.post("/delete-user/:email", checkTokenExistence, (req, res, next) => {
 router.post("/delete-pacient/:id", checkTokenExistence, (req, res, next) => {
     const userId = req.params.id;
 
-    // Set the id_pacient field to NULL in the Ingrijitori table
+    // Delete related rows from date_colectate
     db.query(
-        "UPDATE Ingrijitori SET id_pacient = NULL WHERE id_pacient = ?",
+        "DELETE FROM date_colectate WHERE id_colectie IN (SELECT id_colectie FROM Pacienti WHERE id_pacient = ?)",
         [userId],
         function (error, results, fields) {
             if (error) {
                 console.log(error);
                 return res
                     .status(500)
-                    .json({ error: true, msg: "Failed to update Ingrijitori entries." });
+                    .json({ error: true, msg: "Eroare la stergerea datelor din date_colectate." });
             }
 
-            // Set the id_pacient field to NULL in the Supraveghetori table
+            // Delete related rows from parametri_normali
             db.query(
-                "UPDATE Supraveghetori SET id_pacient = NULL WHERE id_pacient = ?",
+                "DELETE FROM parametri_normali WHERE id_parametru IN (SELECT id_parametru FROM Pacienti WHERE id_pacient = ?)",
                 [userId],
                 function (error, results, fields) {
                     if (error) {
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to update Supraveghetori entries." });
+                            .json({ error: true, msg: "Eroare la stergerea datelor din parametri_normali." });
                     }
 
-                    // Delete the Pacienti
+                    // Delete related rows from date_medicale
                     db.query(
-                        "DELETE FROM Pacienti WHERE id_pacient = ?",
+                        "DELETE FROM date_medicale WHERE id_medical IN (SELECT id_medical FROM Pacienti WHERE id_pacient = ?)",
                         [userId],
                         function (error, results, fields) {
                             if (error) {
                                 console.log(error);
                                 return res
                                     .status(500)
-                                    .json({ error: true, msg: "Failed to delete user." });
+                                    .json({ error: true, msg: "Eroare la stergerea datelor din date_medicale." });
                             }
-                            return res
-                                .status(200)
-                                .send({ error: false, msg: "Pacient deleted successfully." });
+
+                            // Set the id_pacient field to NULL in the Supraveghetori table
+                            db.query(
+                                "UPDATE Supraveghetori SET id_pacient = NULL WHERE id_pacient = ?",
+                                [userId],
+                                function (error, results, fields) {
+                                    if (error) {
+                                        console.log(error);
+                                        return res
+                                            .status(500)
+                                            .json({ error: true, msg: "Eroare la actualizarea datelor din supraveghetori." });
+                                    }
+
+                                    // Set the id_pacient field to NULL in the Ingrijitori table
+                                    db.query(
+                                        "UPDATE Ingrijitori SET id_pacient = NULL WHERE id_pacient = ?",
+                                        [userId],
+                                        function (error, results, fields) {
+                                            if (error) {
+                                                console.log(error);
+                                                return res
+                                                    .status(500)
+                                                    .json({ error: true, msg: "Eroare la actualizarea datelor din ingrijitori." });
+                                            }
+
+                                            //Delete the Pacienti
+                                            db.query(
+                                                "DELETE FROM Pacienti WHERE id_pacient = ?",
+                                                [userId],
+                                                function (error, results, fields) {
+                                                    if (error) {
+                                                        console.log(error);
+                                                        return res
+                                                            .status(500)
+                                                            .json({ error: true, msg: "Eroare la stergerea pacientului" });
+                                                    }
+                                                    return res
+                                                        .status(200)
+                                                        .send({ error: false, msg: "Pacient sters cu success." });
+                                                }
+                                            );
+                                        }
+                                    );
+                                }
+                            );
                         }
                     );
                 }
@@ -772,7 +815,7 @@ router.post("/clear-alarma/:id", checkTokenExistence, async (req, res, next) => 
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to update Pacienti table" });
+                        .json({ error: true, msg: "Eroare la actualizarea pacienti" });
                 }
                 // Step 2: Delete the alarm
                 db.query(
@@ -783,12 +826,12 @@ router.post("/clear-alarma/:id", checkTokenExistence, async (req, res, next) => 
                             console.log(error);
                             return res
                                 .status(500)
-                                .json({ error: true, msg: "Failed to clear alarma" });
+                                .json({ error: true, msg: "Eroare la stergerea alarmei" });
                         }
                         if (results.affectedRows === 0) {
                             return res
                                 .status(404)
-                                .json({ error: true, msg: "Alarma not found" });
+                                .json({ error: true, msg: "Alarma nu a fost gasita" });
                         }
                         return res
                             .status(200)
@@ -801,7 +844,7 @@ router.post("/clear-alarma/:id", checkTokenExistence, async (req, res, next) => 
         console.log(error);
         return res
             .status(500)
-            .json({ error: true, msg: "An error occurred on the server" });
+            .json({ error: true, msg: "Eroare interna server" });
     }
 });
 
@@ -820,16 +863,16 @@ router.post(
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to fetch patient details." });
+                            .json({ error: true, msg: "Eroare la cererea pentru pacienti." });
                     }
                     if (!results.length) {
                         return res
                             .status(404)
-                            .json({ error: true, msg: "Patient not found." });
+                            .json({ error: true, msg: "Pacientul nu a fost gasit." });
                     }
                     return res.status(200).send({
                         error: false,
-                        msg: "Patient details fetched successfully.",
+                        msg: "Datele pacientului au fost preluate cu success.",
                         data: results[0],
                     });
                 }
@@ -854,16 +897,16 @@ router.post(
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to fetch medical data." });
+                            .json({ error: true, msg: "Eroare la cererea datelor medicale." });
                     }
                     if (!results.length) {
                         return res
                             .status(404)
-                            .json({ error: true, msg: "Medical data not found." });
+                            .json({ error: true, msg: "Datele medicale nu au fost gasite." });
                     }
                     return res.status(200).send({
                         error: false,
-                        msg: "Medical data fetched successfully.",
+                        msg: "Date medicale preluate cu success.",
                         data: results[0],
                     });
                 }
@@ -888,16 +931,16 @@ router.post(
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to fetch collected data." });
+                            .json({ error: true, msg: "Eroare la cererea datelor colectate." });
                     }
                     if (!results.length) {
                         return res
                             .status(404)
-                            .json({ error: true, msg: "Collected data not found." });
+                            .json({ error: true, msg: "Datele colectate nu au fost gasite." });
                     }
                     return res.status(200).send({
                         error: false,
-                        msg: "Collected data fetched successfully.",
+                        msg: "Date colectate preluate cu success.",
                         data: results[0],
                     });
                 }
@@ -923,16 +966,16 @@ router.get(
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to fetch alarm details." });
+                            .json({ error: true, msg: "Eroare la cererea alarmei." });
                     }
                     if (!results.length) {
                         return res
                             .status(404)
-                            .json({ error: true, msg: "Alarm not found." });
+                            .json({ error: true, msg: "Alarma nu a fost gasita." });
                     }
                     return res.status(200).send({
                         error: false,
-                        msg: "Alarm details fetched successfully.",
+                        msg: "Datele alarmei au fost preluate cu success.",
                         data: results[0],
                     });
                 }
@@ -941,7 +984,7 @@ router.get(
             console.log(error);
             return res
                 .status(500)
-                .json({ error: true, msg: "An error occurred while fetching alarm details." });
+                .json({ error: true, msg: "Eroare interna server" });
         }
     }
 );
@@ -961,12 +1004,12 @@ router.get(
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to fetch recomandari details." });
+                            .json({ error: true, msg: "Eroare la cererea recomandari." });
                     }
                     if (!results.length) {
                         return res
                             .status(404)
-                            .json({ error: true, msg: "Recomandare not found." });
+                            .json({ error: true, msg: "Recomandarea nu a fost gasita." });
                     }
 
                     const dateInLocalTime = new Date(results[0].timp).toLocaleString("ro-RO", { timeZone: "Europe/Bucharest" });
@@ -974,7 +1017,7 @@ router.get(
 
                     return res.status(200).send({
                         error: false,
-                        msg: "Recomandari details fetched successfully.",
+                        msg: "Datele recomandarii au fost preluate cu success.",
                         data: results[0],
                     });
                 }
@@ -983,7 +1026,7 @@ router.get(
             console.log(error);
             return res
                 .status(500)
-                .json({ error: true, msg: "An error occurred while fetching recomandari details." });
+                .json({ error: true, msg: "Eroare interna server" });
         }
     }
 );
@@ -1002,16 +1045,16 @@ router.post(
                         console.log(error);
                         return res
                             .status(500)
-                            .json({ error: true, msg: "Failed to fetch parametri data." });
+                            .json({ error: true, msg: "Eroare la cererea parametrilor." });
                     }
                     if (!results.length) {
                         return res
                             .status(404)
-                            .json({ error: true, msg: "Parametri data not found." });
+                            .json({ error: true, msg: "Parametri nu au fost gasiti." });
                     }
                     return res.status(200).send({
                         error: false,
-                        msg: "Parametri data fetched successfully.",
+                        msg: "Datele parametrilor au fost preluate cu success.",
                         data: results[0],
                     });
                 }
@@ -1032,16 +1075,16 @@ router.get("/get-date-istorice", checkTokenExistence, (req, res, next) => {
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to fetch istoric date data." });
+                        .json({ error: true, msg: "Eroare la cererea istoric date." });
                 }
                 if (!results.length) {
                     return res
                         .status(404)
-                        .json({ error: true, msg: "Istoric date data not found." });
+                        .json({ error: true, msg: "Istoric date nu a fost gasit." });
                 }
                 return res.status(200).send({
                     error: false,
-                    msg: "Istoric date data fetched successfully.",
+                    msg: "Istoric date a fost preluat cu success!",
                     data: results,
                 });
             }
@@ -1079,16 +1122,16 @@ router.put(
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to update patient details." });
+                        .json({ error: true, msg: "Eroare la actualizarea detaliilor." });
                 }
                 if (results.affectedRows === 0) {
                     return res
                         .status(404)
-                        .json({ error: true, msg: "Patient not found." });
+                        .json({ error: true, msg: "Pacientul nu a fost gasit." });
                 }
                 return res.status(200).send({
                     error: false,
-                    msg: "Patient details updated successfully.",
+                    msg: "Pacient actualizat cu success!",
                 });
             });
         } catch (error) {
@@ -1125,16 +1168,16 @@ router.put(
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to update medical details." });
+                        .json({ error: true, msg: "Eroare la actualizarea datelor medicale" });
                 }
                 if (results.affectedRows === 0) {
                     return res
                         .status(404)
-                        .json({ error: true, msg: "No medical record found for this patient." });
+                        .json({ error: true, msg: "Datele medicale nu au fost gasite" });
                 }
                 return res.status(200).send({
                     error: false,
-                    msg: "Medical details updated successfully.",
+                    msg: "Date medicale modificate cu success!",
                 });
             });
         } catch (error) {
@@ -1168,13 +1211,13 @@ router.put("/update-date-colectate/:id", checkTokenExistence, (req, res, next) =
                 console.log(error);
                 return res
                     .status(500)
-                    .json({ error: true, msg: "Failed to update collected date details." });
+                    .json({ error: true, msg: "Eroare la actualizarea datelor colectate." });
             }
 
             if (results.affectedRows === 0) {
                 return res
                     .status(404)
-                    .json({ error: true, msg: "No collected date record found for this user." });
+                    .json({ error: true, msg: "Datele colectate nu au fost gasite." });
             }
 
             // create new row in istoric_date table
@@ -1190,11 +1233,11 @@ router.put("/update-date-colectate/:id", checkTokenExistence, (req, res, next) =
                     console.log(err);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to insert data into istoric_date." });
+                        .json({ error: true, msg: "Eroare la actualizarea datelor istoric." });
                 }
                 return res.status(200).send({
                     error: false,
-                    msg: "Collected date details updated successfully and data added to istoric_date.",
+                    msg: "Datele colectate au fost actualizate cu success!",
                 });
             });
         });
@@ -1231,16 +1274,16 @@ router.put(
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to update parametri details." });
+                        .json({ error: true, msg: "Eroare la actualizarea parametrilor." });
                 }
                 if (results.affectedRows === 0) {
                     return res
                         .status(404)
-                        .json({ error: true, msg: "No medical record found for this patient." });
+                        .json({ error: true, msg: "Datele parametrilor nu au fost gasite." });
                 }
                 return res.status(200).send({
                     error: false,
-                    msg: "Parametri details updated successfully.",
+                    msg: "Detaliile parametrilor au fost actualizate cu success!",
                 });
             });
         } catch (error) {
@@ -1264,7 +1307,7 @@ router.post("/recomandare-doctor/:id", checkTokenExistence, (req, res, next) => 
                 console.log(error);
                 return res
                     .status(500)
-                    .json({ error: true, msg: "Failed to insert recommendation." });
+                    .json({ error: true, msg: "Eroare la introducerea recomandarii" });
             }
 
             // Get the ID of the newly created recommendation
@@ -1279,7 +1322,7 @@ router.post("/recomandare-doctor/:id", checkTokenExistence, (req, res, next) => 
                     console.log(error);
                     return res
                         .status(500)
-                        .json({ error: true, msg: "Failed to update patient with recommendation." });
+                        .json({ error: true, msg: "Eroare la actualizarea recomandarii pentru pacient" });
                 }
                 return res.status(200).send({
                     error: false,
@@ -1289,7 +1332,7 @@ router.post("/recomandare-doctor/:id", checkTokenExistence, (req, res, next) => 
         });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({ error: true, msg: "An error occurred." });
+        return res.status(500).json({ error: true, msg: "Eroare interna server" });
     }
 });
 
@@ -1301,7 +1344,7 @@ router.post("/verifytoken", (req, res) => {
             !req.headers.authorization.split(" ")[1]
         ) {
             return res.status(422).json({
-                message: "Please provide the token",
+                message: "Va rugam sa va autentificati",
             });
         }
         const token = req.headers.authorization.split(" ")[1];
@@ -1309,11 +1352,11 @@ router.post("/verifytoken", (req, res) => {
             if (err) {
                 if (err instanceof jwt.TokenExpiredError) {
                     return res.status(422).json({
-                        message: "Token has expired, please login again!",
+                        message: "Jetonul a expirat, va rugam sa va autentificati",
                     });
                 } else {
                     return res.status(422).json({
-                        message: "The token is not working",
+                        message: "Jetonul nu functioneaza",
                     });
                 }
             }
@@ -1326,13 +1369,13 @@ router.post("/verifytoken", (req, res) => {
                 });
             } else {
                 return res.status(422).json({
-                    message: "Please provide an original token",
+                    message: "Eroare jeton",
                 });
             }
         });
     } catch (error) {
         console.log("ERROR", error.name);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "Eroare interna server" });
     }
 });
 
