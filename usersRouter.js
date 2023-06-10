@@ -751,44 +751,57 @@ router.post("/delete-pacient/:id", checkTokenExistence, (req, res, next) => {
                                     .json({ error: true, msg: "Eroare la stergerea datelor din date_medicale." });
                             }
 
-                            // Set the id_pacient field to NULL in the Supraveghetori table
+                            // Delete related rows from istoric_date
                             db.query(
-                                "UPDATE Supraveghetori SET id_pacient = NULL WHERE id_pacient = ?",
-                                [userId],
+                                "DELETE FROM istoric_date",
                                 function (error, results, fields) {
                                     if (error) {
                                         console.log(error);
                                         return res
                                             .status(500)
-                                            .json({ error: true, msg: "Eroare la actualizarea datelor din supraveghetori." });
+                                            .json({ error: true, msg: "Eroare la stergerea tuturor datelor din istoric_date." });
                                     }
 
-                                    // Set the id_pacient field to NULL in the Ingrijitori table
+                                    // Set the id_pacient field to NULL in the Supraveghetori table
                                     db.query(
-                                        "UPDATE Ingrijitori SET id_pacient = NULL WHERE id_pacient = ?",
+                                        "UPDATE Supraveghetori SET id_pacient = NULL WHERE id_pacient = ?",
                                         [userId],
                                         function (error, results, fields) {
                                             if (error) {
                                                 console.log(error);
                                                 return res
                                                     .status(500)
-                                                    .json({ error: true, msg: "Eroare la actualizarea datelor din ingrijitori." });
+                                                    .json({ error: true, msg: "Eroare la actualizarea datelor din supraveghetori." });
                                             }
 
-                                            //Delete the Pacienti
+                                            // Set the id_pacient field to NULL in the Ingrijitori table
                                             db.query(
-                                                "DELETE FROM Pacienti WHERE id_pacient = ?",
+                                                "UPDATE Ingrijitori SET id_pacient = NULL WHERE id_pacient = ?",
                                                 [userId],
                                                 function (error, results, fields) {
                                                     if (error) {
                                                         console.log(error);
                                                         return res
                                                             .status(500)
-                                                            .json({ error: true, msg: "Eroare la stergerea pacientului" });
+                                                            .json({ error: true, msg: "Eroare la actualizarea datelor din ingrijitori." });
                                                     }
-                                                    return res
-                                                        .status(200)
-                                                        .send({ error: false, msg: "Pacient sters cu success." });
+
+                                                    // Delete the Pacienti
+                                                    db.query(
+                                                        "DELETE FROM Pacienti WHERE id_pacient = ?",
+                                                        [userId],
+                                                        function (error, results, fields) {
+                                                            if (error) {
+                                                                console.log(error);
+                                                                return res
+                                                                    .status(500)
+                                                                    .json({ error: true, msg: "Eroare la stergerea pacientului." });
+                                                            }
+                                                            return res
+                                                                .status(200)
+                                                                .send({ error: false, msg: "Pacient sters cu succes." });
+                                                        }
+                                                    );
                                                 }
                                             );
                                         }
