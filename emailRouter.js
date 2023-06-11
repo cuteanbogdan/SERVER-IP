@@ -13,8 +13,8 @@ function sendEmail(email, token) {
   var mail = nodemailer.createTransport({
     service: "yahoo",
     auth: {
-      user: "cutybogdy@yahoo.com", // Your email id
-      pass: "dbyvstclmtlnkord", // Your password
+      user: process.env.EMAIL, // Your email id
+      pass: process.env.PASSWORD_EMAIL, // Your password
     },
   });
 
