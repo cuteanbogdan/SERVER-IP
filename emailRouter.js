@@ -19,7 +19,7 @@ function sendEmail(email, token) {
   });
 
   var mailOptions = {
-    from: "cutybogdy@yahoo.com",
+    from: process.env.EMAIL,
     to: email,
     subject: "Link-ul pentru resetarea parolei - SmartCare.com",
     html:
